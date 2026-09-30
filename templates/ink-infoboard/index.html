@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbour District Monitor — 中國風 — GIS UI Gallery</title>
+
+<!--
+  ================================================================
+  中國風資訊版 — MapLibre template, ink-wash theme
+  ================================================================
+  Single file, no API key, CARTO basemap via MapLibre CDN.
+  To go live: replace SEED blocks with your GeoJSON / API endpoints.
+
+  The Prompt that built this:
+  "Build an ink-wash styled HK district dashboard: paper-cream panels,
+   red seal accents, serif CJK type, a KPI header, category chips, a
+   list of projects, and a choropleth district map with legend.
+   MapLibre GL JS, single HTML file."
+-->
+
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --paper:#f4f0e6; --paper-2:#efe9db; --paper-3:#e8e0cc;
+  --ink:#2b2620; --ink-soft:rgba(43,38,32,.62); --ink-faint:rgba(43,38,32,.4);
+  --seal:#8c2f2f; --seal-soft:rgba(140,47,47,.1);
+  --line:rgba(60,48,32,.18); --line-strong:rgba(60,48,32,.35);
+  --good:#3d6b4f; --warn:#a26d1f; --bad:#8c2f2f;
+  --font-serif:'Noto Serif TC','Songti SC',serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:var(--font-serif);background:var(--paper);color:var(--ink);overflow:hidden;
+  /* faint paper texture — SVG noise, data URI so no asset needed */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.04'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{background:var(--paper)!important;color:var(--ink-faint)!important;font-size:10px}
+.maplibregl-ctrl-attrib a{color:var(--ink-faint)!important}
+.maplibregl-popup-close-button{color:var(--ink-soft)}
+
+/* ---------- paper HUD ---------- */
+.hud{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
+.hud>*{pointer-events:auto}
+
+/* vertical writing strips on edges — the 中國風 signature */
+.edge{writing-mode:vertical-rl;letter-spacing:.42em;font-size:11px;color:var(--ink-faint);
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);user-select:none}
+.edge.right{left:auto;right:14px}
+
+/* top bar */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;padding:22px 26px 0}
+.title-block{background:var(--paper-2);border:1px solid var(--line);border-radius:3px;
+  padding:14px 22px 12px;box-shadow:0 3px 14px rgba(60,48,32,.12);position:relative;max-width:420px}
+.title-block h1{font-size:21px;font-weight:700;letter-spacing:.18em;line-height:1.2}
+.title-block .en{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--ink-faint);margin-top:5px;text-transform:uppercase}
+.title-block .date{font-size:11px;color:var(--ink-soft);margin-top:7px}
+/* red seal — 印章 */
+.seal{position:absolute;right:-12px;bottom:-12px;width:40px;height:40px;background:var(--seal);
+  border-radius:5px;color:var(--paper);font-size:11px;display:grid;place-items:center;text-align:center;
+  line-height:1.1;box-shadow:0 2px 8px rgba(140,47,47,.4);font-weight:700;letter-spacing:.06em}
+
+/* legend */
+.legend{background:var(--paper-2);border:1px solid var(--line);border-radius:3px;padding:10px 14px;
+  font-size:11px;color:var(--ink-soft);box-shadow:0 3px 14px rgba(60,48,32,.1)}
+.legend .cap{font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px}
+.legend .row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.legend .sw{width:14px;height:9px;border:1px solid var(--line-strong);border-radius:1px}
+.legend .row b{margin-left:auto;font-family:var(--font-mono);font-weight:600;color:var(--ink)}
+
+/* category chips (top-right column) */
+.chips{position:absolute;top:96px;right:26px;display:flex;flex-direction:column;gap:6px;width:150px}
+.chip{display:flex;align-items:center;gap:8px;background:var(--paper-2);border:1px solid var(--line);
+  border-radius:2px;padding:7px 12px;font-size:12px;cursor:pointer;transition:130ms;box-shadow:0 2px 8px rgba(60,48,32,.08)}
+.chip:hover{border-color:var(--line-strong)}
+.chip.on{background:var(--seal-soft);border-color:var(--seal);color:var(--seal)}
+.chip .dot{width:8px;height:8px;border-radius:1px;flex:none}
+.chip b{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink-soft)}
+
+/* project list (bottom) */
+.projects{position:absolute;left:26px;bottom:26px;width:340px;max-height:38vh;
+  background:var(--paper-2);border:1px solid var(--line);border-radius:3px;
+  box-shadow:0 6px 22px rgba(60,48,32,.16);display:flex;flex-direction:column}
+.projects header{padding:10px 16px 8px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.projects header h2{font-size:12px;font-weight:600;letter-spacing:.28em}
+.projects header span{font-family:var(--font-mono);font-size:10px;color:var(--seal)}
+.projects ul{list-style:none;padding:6px 10px 10px;overflow-y:auto;min-height:0}
+.projects li{padding:8px 8px;border-bottom:1px dashed var(--line);cursor:pointer;transition:120ms;font-size:12.5px}
+.projects li:last-child{border-bottom:0}
+.projects li:hover{background:var(--seal-soft)}
+.projects li .t{font-weight:600;line-height:1.3}
+.projects li .m{font-size:10.5px;color:var(--ink-soft);margin-top:3px;font-family:var(--font-mono)}
+.projects li .badge{display:inline-block;font-size:10px;color:var(--seal);border:1px solid rgba(140,47,47,.4);
+  border-radius:2px;padding:1px 6px;margin-left:8px;vertical-align:1px}
+
+/* popup skin */
+.maplibregl-popup-content{background:var(--paper-2);color:var(--ink);border:1px solid var(--line-strong);
+  border-radius:3px;font-family:var(--font-serif);box-shadow:0 4px 18px rgba(60,48,32,.2);padding:12px 16px}
+.maplibregl-popup-tip{border-top-color:var(--paper-2)}
+
+@media (max-width:760px){
+  .edge,.chips{display:none}
+  .projects{width:calc(100% - 52px)}
+}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="hud">
+  <span class="edge">香港 維多利亞港 區議會 監察</span>
+  <span class="edge right">圖 GIS UI GALLERY 墨</span>
+
+  <div class="topbar">
+    <div class="title-block">
+      <h1>港九監察 · 區議會</h1>
+      <div class="en">Harbour District Monitor · HKSAR</div>
+      <div class="date" id="date"></div>
+      <div class="seal">啟<br>示</div>
+    </div>
+    <div class="legend">
+      <div class="cap">Capital works · HK$M</div>
+      <div class="row"><span class="sw" style="background:#f4f0e6"></span>&lt; 500 <b>3</b></div>
+      <div class="row"><span class="sw" style="background:#e8cfa8"></span>500 – 2,000 <b>4</b></div>
+      <div class="row"><span class="sw" style="background:#d8956a"></span>2,000 – 8,000 <b>3</b></div>
+      <div class="row"><span class="sw" style="background:#b4533f"></span>&gt; 8,000 <b>1</b></div>
+    </div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="projects">
+    <header><h2>工程項目</h2><span id="count"></span></header>
+    <ul id="list"></ul>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   ==== SWAP YOUR DATA HERE ====
+   ================================================================ */
+const DISTRICTS = [   // simple polygons (lng,lat) for 9 HK districts
+  {id:'KT', name:'觀塘 Kwun Tong',  ring:[[114.20,22.34],[114.24,22.34],[114.24,22.29],[114.20,22.29]]},
+  {id:'WTS',name:'黃大仙 Wong Tai Sin',ring:[[114.18,22.35],[114.21,22.35],[114.21,22.32],[114.18,22.32]]},
+  {id:'SSP',name:'深水埗 Sham Shui Po',ring:[[114.15,22.34],[114.17,22.34],[114.17,22.32],[114.15,22.32]]},
+  {id:'YTM',name:'油尖旺 Yau Tsim Mong',ring:[[114.16,22.32],[114.18,22.32],[114.18,22.30],[114.16,22.30]]},
+  {id:'KLC',name:'九龍城 Kowloon City',ring:[[114.18,22.32],[114.21,22.32],[114.21,22.30],[114.18,22.30]]},
+  {id:'HKI',name:'中西區 Central & Western',ring:[[114.13,22.29],[114.16,22.29],[114.16,22.27],[114.13,22.27]]},
+  {id:'WCH',name:'灣仔 Wan Chai',ring:[[114.16,22.29],[114.19,22.29],[114.19,22.27],[114.16,22.27]]},
+  {id:'EST',name:'東區 Eastern',ring:[[114.19,22.29],[114.25,22.29],[114.25,22.27],[114.19,22.27]]},
+  {id:'ST', name:'沙田 Sha Tin',ring:[[114.17,22.42],[114.22,22.42],[114.22,22.38],[114.17,22.38]]},
+];
+const BUDGET = {'KT':12400,'WTS':860,'SSP':320,'YTM':1450,'KLC':640,'HKI':9800,'WCH':2300,'EST':1780,'ST':410};
+
+const CATS = ['Infrastructure','Transport','Housing','Environment','Welfare'];
+const CAT_COLOR = {'Infrastructure':'#b4533f','Transport':'#8c6a2f','Housing':'#3d6b4f','Environment':'#4a6b8a','Welfare':'#8c2f6b'};
+
+const PROJECTS = [
+  [1,'觀塘海濱第二階段 Kai Tak-to-Kwun Tong boardwalk','KT','Infrastructure',12400,'2026–2032','In tender'],
+  [2,'中環街市活化 Central Market renewal','HKI','Welfare',9800,'2024–2028','Construction'],
+  [3,'沙田 T4 主幹路 Sha Tin Trunk Road T4','ST','Transport',410,'2026–2030','Consultancy'],
+  [4,'黃大仙雨水隧道 Wong Tai Sin storm drain','WTS','Infrastructure',860,'2025–2029','Construction'],
+  [5,'深水埗海達邨重建 Hai Tat Estate phase 2','SSP','Housing',320,'2026–2031','Design'],
+  [6,'油尖旺行人天橋 YTM elevated walkway network','YTM','Transport',1450,'2025–2028','Construction'],
+  [7,'灣仔北雨水蓄洪 Wan Chai flood storage','WCH','Environment',2300,'2026–2030','Design'],
+  [8,'東區走廊隔音罩 Eastern Corridor noise enclosures','EST','Environment',1780,'2025–2027','Construction'],
+  [9,'九龍城街市翻新 Kowloon City market refit','KLC','Welfare',640,'2025–2026','In tender'],
+  [10,'觀塘遊樂場重建 Kwun Tong playground rebuild','KT','Housing',10500,'2027–2033','Planning'],
+  [11,'中環新海濱三號用地 Central Harbourfront Site 3','HKI','Infrastructure',3200,'2026–2032','Planning'],
+];
+/* ==================== end of data block ======================== */
+
+const HK = [114.185, 22.305];
+const map = new maplibregl.Map({
+  container:'map',
+  style:'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  center: HK, zoom: 11, bearing: -6, attributionControl:{compact:true},
+});
+
+const breaks = [[500,'#f4f0e6'],[2000,'#e8cfa8'],[8000,'#d8956a'],[Infinity,'#b4533f']];
+const fillFor = v => breaks.find(b => v < b[0])[1];
+
+map.on('load', () => {
+  map.addSource('districts', { type:'geojson', data:{
+    type:'FeatureCollection',
+    features: DISTRICTS.map(d => ({
+      type:'Feature',
+      properties:{ id:d.id, name:d.name, budget:BUDGET[d.id] },
+      geometry:{ type:'Polygon', coordinates:[[...d.ring, d.ring[0]]] },
+    })),
+  }});
+  map.addLayer({ id:'district-fill', type:'fill', source:'districts',
+    paint:{ 'fill-color':['get','budget'], 'fill-opacity':.5 } });   // replaced below
+  // ponytail: mapbox-expressions can't call JS; set each feature's fill via match on id
+  map.setPaintProperty('district-fill','fill-color',[
+    'match',['get','id'],
+    ...DISTRICTS.flatMap(d => [d.id, fillFor(BUDGET[d.id])]),
+    '#f4f0e6',
+  ]);
+  map.addLayer({ id:'district-line', type:'line', source:'districts',
+    paint:{ 'line-color':'#5a4632','line-width':1.2,'line-opacity':.8 } });
+  map.addLayer({ id:'district-label', type:'symbol', source:'districts',
+    layout:{ 'text-field':['get','name'],'text-size':11,'text-font':['Noto Sans Regular'],
+      'text-anchor':'center','text-offset':[0,0.2] },
+    paint:{ 'text-color':'#2b2620','text-opacity':.85 } });
+
+  map.on('click','district-fill', e => {
+    const p = e.features[0].properties;
+    new maplibregl.Popup({closeButton:true, maxWidth:'280px'})
+      .setLngLat(e.lngLat)
+      .setHTML(`<b>${p.name}</b><br>Capital works: <b>HK$${(p.budget/1000).toFixed(1)}B</b>`)
+      .addTo(map);
+  });
+  map.on('mouseenter','district-fill', () => map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','district-fill', () => map.getCanvas().style.cursor='');
+
+  buildChips(); render();
+});
+
+/* ---------- category chips + project list ---------- */
+let filter = 'all';
+function buildChips(){
+  const el = document.getElementById('chips');
+  const mk = (cat, color, n) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (cat==='all' ? ' on' : '');
+    b.innerHTML = `<span class="dot" style="background:${color||'#8c2f2f'}"></span>${cat||'全部'}<b>${n}</b>`;
+    b.onclick = () => { filter = cat; document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b)); render(); };
+    el.appendChild(b);
+  };
+  mk('all', null, PROJECTS.length);
+  CATS.forEach(c => mk(c, CAT_COLOR[c], PROJECTS.filter(p=>p[3]===c).length));
+}
+
+function render(){
+  const rows = PROJECTS.filter(p => filter==='all' || p[3]===filter);
+  const ul = document.getElementById('list'); ul.innerHTML = '';
+  rows.forEach(p => {
+    const li = document.createElement('li');
+    li.innerHTML = `<div class="t">${p[1]}<span class="badge">${p[6]}</span></div>
+      <div class="m">${DISTRICTS.find(d=>d.id===p[2]).name.split(' ')[1]} · HK$${(p[4]/1000).toFixed(1)}B · ${p[5]}</div>`;
+    li.onclick = () => {
+      const d = DISTRICTS.find(x=>x.id===p[2]);
+      const c = d.ring.reduce((a,r)=>[a[0]+r[0]/d.ring.length, a[1]+r[1]/d.ring.length],[0,0]);
+      map.easeTo({center:c, zoom:12, duration:700});
+    };
+    ul.appendChild(li);
+  });
+  document.getElementById('count').textContent = rows.length + ' 項';
+}
+
+document.getElementById('date').textContent =
+  new Date().toLocaleDateString('zh-HK',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+</script>
+</body>
+</html>

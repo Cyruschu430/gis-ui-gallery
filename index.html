@@ -151,14 +151,39 @@
     </a>
 
     <!-- upcoming placeholders (rendered dim; remove .disabled + add href when shipped) -->
-    <div class="card disabled" data-cat="infoboard">
-      <div class="thumb"><span class="soon">COMING SOON</span></div>
+    <a class="card" data-cat="infoboard" href="templates/ink-infoboard/">
+      <div class="thumb">
+        <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="180" fill="#f4f0e6"/>
+          <g opacity=".55" font-family="serif">
+            <text x="20" y="40" font-size="14" fill="#2b2620" letter-spacing="3">港九監察</text>
+            <text x="20" y="58" font-size="8" fill="#8fa3b8" font-family="monospace" letter-spacing="2">HARBOUR DISTRICT MONITOR</text>
+          </g>
+          <g>
+            <rect x="18" y="76" width="70" height="46" fill="#e8cfa8" stroke="#5a4632" stroke-width="1" opacity=".9"/>
+            <rect x="98" y="76" width="70" height="46" fill="#d8956a" stroke="#5a4632" stroke-width="1" opacity=".9"/>
+            <rect x="178" y="76" width="70" height="46" fill="#b4533f" stroke="#5a4632" stroke-width="1" opacity=".9"/>
+            <rect x="258" y="76" width="44" height="46" fill="#f4f0e6" stroke="#5a4632" stroke-width="1" opacity=".9"/>
+          </g>
+          <rect x="262" y="110" width="22" height="22" fill="#8c2f2f" rx="2"/>
+          <text x="267" y="125" font-size="8" fill="#f4f0e6">啟</text>
+          <g font-family="serif" font-size="7" fill="#2b2620" opacity=".7">
+            <text x="24" y="146">觀塘 Kwun Tong</text>
+            <text x="24" y="158">中環 Central</text>
+            <text x="120" y="146">沙田 Sha Tin</text>
+          </g>
+        </svg>
+        <span class="live">水墨</span>
+      </div>
       <div class="cbody">
         <h3>中國風資訊版 <span class="cat">infoboard</span></h3>
-        <p>Ink-wash styled city info board — a GIS dashboard that doesn't look like every other dashboard.</p>
-        <div class="cmeta"><span class="skins"><i style="background:#f4f2ec"></i><i style="background:#1c1a17"></i></span><span class="open">soon</span></div>
+        <p>Ink-wash district monitor: paper panels, red seal accents, vertical writing strips, choropleth map with legend. A dashboard that doesn't look like every other dashboard.</p>
+        <div class="cmeta">
+          <span class="skins"><i style="background:#f4f0e6"></i><i style="background:#8c2f2f"></i></span>
+          <span class="open">open →</span>
+        </div>
       </div>
-    </div>
+    </a>
 
     <a class="card" data-cat="field" href="templates/work-orders/">
       <div class="thumb">
