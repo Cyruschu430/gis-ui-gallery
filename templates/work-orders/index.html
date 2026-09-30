@@ -195,7 +195,7 @@ async function selectJob(oid){
   if (!g) return;
   render();
   await view.goTo({target:g.geometry, zoom:16}, {duration:500});
-  view.popup.open({ features:[g], location:g.geometry });
+  view.openPopup({ features:[g], location:g.geometry });
 }
 
 document.getElementById('filters').addEventListener('click', e => {
