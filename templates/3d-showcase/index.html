@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Building Showcase — GIS UI Gallery</title>
+
+<!--
+  ================================================================
+  3D BUILDING SHOWCASE — MapLibre + three.js GLB on map
+  ================================================================
+  Single file. MapLibre CDN + three.js CDN. Real GLB asset: LittlestTokyo
+  (Khronos Group, CC0). Basemap CARTO.
+
+  To go live: replace the SEED block with your building list and swap the
+  GLB URL for your own 3D model (e.g. Cesium Ion / Sketchfab export).
+
+  The Prompt that built this:
+  "Build a 3D building showcase: MapLibre base, three.js custom layer
+   renders a real GLB city block at a location, popup on hover, building
+   list panel with floor info, theme toggle. Single HTML file."
+-->
+
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/three@0.170.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.170.0/examples/js/loaders/GLTFLoader.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;510;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0a0e13; --surface:#11161d; --surface-2:#161d26; --line:rgba(148,196,255,.1);
+  --text:#e8f0f8; --text-2:#8fa3b8; --text-3:#4a5568;
+  --accent:#38bdf8; --accent-soft:rgba(56,189,248,.14); --good:#4ade80; --warn:#fbbf24;
+  --font-sans:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="light"]{
+  --bg:#eef1f4; --surface:#ffffff; --surface-2:#f1f4f7; --line:rgba(15,23,42,.08);
+  --text:#0f172a; --text-2:#475569; --text-3:#94a3b8;
+  --accent:#2563eb; --accent-soft:rgba(37,99,235,.1);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{background:var(--surface)!important;color:var(--text-3)!important;font-size:10px}
+.maplibregl-ctrl-attrib a{color:var(--text-3)!important}
+
+.hud{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
+.hud>*{pointer-events:auto}
+
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px 0}
+.title{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 20px;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.title h1{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.title .sub{font-family:var(--font-mono);font-size:10px;color:var(--text-3);letter-spacing:.08em;margin-top:3px}
+
+.theme-btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text-2);
+  font-family:var(--font-mono);font-size:11px;padding:8px 14px;cursor:pointer;transition:150ms}
+.theme-btn:hover{color:var(--text);border-color:rgba(148,196,255,.3)}
+
+/* building list */
+.panel{position:absolute;left:20px;bottom:20px;width:340px;max-height:60vh;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
+.panel header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.panel header h2{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)}
+.panel header span{font-family:var(--font-mono);font-size:10px;color:var(--accent)}
+.panel ul{list-style:none;padding:8px;overflow-y:auto}
+.panel li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:120ms}
+.panel li:hover{background:var(--accent-soft)}
+.panel li.sel{background:var(--accent-soft);outline:1px solid var(--accent)}
+.panel .ico{width:28px;height:28px;border-radius:7px;background:var(--accent-soft);display:grid;place-items:center;font-size:14px;flex:none}
+.panel .nm{font-size:12.5px;font-weight:510;line-height:1.2}
+.panel .ty{font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)}
+.panel .fl{margin-left:auto;font-family:var(--font-mono);font-size:9.5px;color:var(--accent);text-align:right}
+
+/* hover tooltip */
+.tooltip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);
+  border-radius:8px;padding:6px 10px;font-family:var(--font-mono);font-size:10.5px;color:var(--text);
+  transform:translate(-50%,-140%);opacity:0;transition:opacity .15s;white-space:nowrap;z-index:10}
+.tooltip.show{opacity:1}
+
+/* loading overlay */
+.loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,14,19,.85);z-index:20;transition:opacity .4s}
+.loading.done{opacity:0;pointer-events:none}
+.loading .box{text-align:center}
+.loading .ring{width:44px;height:44px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-family:var(--font-mono);font-size:11px;color:var(--text-2);letter-spacing:.06em}
+
+@media (max-width:760px){
+  .panel{width:calc(100% - 40px);max-height:42vh}
+}
+</style>
+</head>
+<body data-theme="dark">
+
+<div id="map"></div>
+
+<div class="hud">
+  <div class="topbar">
+    <div class="title">
+      <h1>Kowloon East — 3D Showcase</h1>
+      <div class="sub">BUILDING EXPLORER · LITTLESTTOKYO GLB</div>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">☀ LIGHT</button>
+  </div>
+
+  <div class="panel">
+    <header><h2>Buildings</h2><span id="count"></span></header>
+    <ul id="list"></ul>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<div class="loading" id="loading"><div class="box"><div class="ring"></div><p>Loading 3D model…</p></div></div>
+
+<script>
+/* ================================================================
+   ==== SWAP YOUR DATA HERE ====
+   Replace BUILDINGS with your building registry. site = [lng, lat].
+   Replace MODEL_URL with your own GLB (e.g. exported from Sketchfab,
+   Cesium Ion, or your Reality Server pipeline).
+   ================================================================ */
+const MODEL_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/LittlestTokyo.glb';
+const MODEL_SCALE = 0.000012;   // GLB is in meters; maplibre custom layer wants mercator scale
+
+const BUILDINGS = [
+  {id:'B01', name:'Kai Tak Sports Park — Main Stadium', type:'Sports · 50,000 seats', floors:'G+5', year:2024, site:[114.2035,22.3225], icon:'🏟'},
+  {id:'B02', name:'AIRSIDE — Grade A Office + Mall',    type:'Commercial · 34 floors', floors:'34', year:2023, site:[114.2010,22.3180], icon:'🏢'},
+  {id:'B03', name:'The Quayside — Office Tower',         type:'Commercial · 26 floors', floors:'26', year:2019, site:[114.2156,22.3105], icon:'🏢'},
+  {id:'B04', name:'Kwun Tong Promenade — Pavilion',     type:'Public · Landscape',     floors:'G',  year:2018, site:[114.2180,22.3080], icon:'🏛'},
+  {id:'B05', name:'Telford Gardens — Residential',      type:'Residential · 21 blocks', floors:'20+', year:1980, site:[114.2126,22.3185], icon:'🏠'},
+];
+/* ==================== end of data block ======================== */
+
+const HK = [114.205, 22.315];
+const map = new maplibregl.Map({
+  container:'map',
+  style:'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  center:HK, zoom:14.5, pitch:55, bearing:-15, attributionControl:{compact:true},
+});
+map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'bottom-right');
+
+/* ---------- three.js custom layer ---------- */
+let renderer, camera, scene, model, raycaster, mouse;
+const loader = new THREE.GLTFLoader();
+
+map.on('load', () => {
+  map.addLayer({
+    id:'3d-model',
+    type:'custom',
+    renderingMode:'3d',
+    onAdd: function(map, gl){
+      this.map = map;
+      camera = new THREE.Camera();
+      scene = new THREE.Scene();
+
+      // light
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+      dir.position.set(0, -70, 100);
+      scene.add(dir);
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // load model
+      loader.load(MODEL_URL, gltf => {
+        model = gltf.scene;
+        // scale to ~80m footprint
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const target = 80; // meters
+        const s = target / Math.max(size.x, size.y, size.z);
+        model.scale.set(s, s, s);
+        scene.add(model);
+        document.getElementById('loading').classList.add('done');
+        map.triggerRepaint();
+      });
+
+      // markers for buildings
+      BUILDINGS.forEach(b => {
+        const el = document.createElement('div');
+        el.style.cssText = 'width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 0 0 rgba(56,189,248,.5);animation:sonar 2s infinite';
+        el.addEventListener('mouseenter', () => showTip(b, el));
+        el.addEventListener('mouseleave', hideTip);
+        el.addEventListener('click', () => selectBuilding(b.id));
+        new maplibregl.Marker({element:el}).setLngLat(b.site).addTo(map);
+      });
+
+      renderer = new THREE.WebGLRenderer({canvas:map.getCanvas(), context:gl, antialias:true});
+      renderer.autoClear = false;
+    },
+    render: function(gl, args){
+      if (!model) return;
+      // mercator transform for our centre point
+      const m = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix);
+      const modelMatrix = map.transform.getMatrixForModel(
+        maplibregl.MercatorCoordinate.fromLngLat([HK[0],HK[1]], 0)
+      );
+      camera.projectionMatrix = m.multiply(modelMatrix);
+      renderer.resetState();
+      renderer.render(scene, camera);
+    }
+  });
+
+  renderList();
+});
+
+/* ---------- list + selection ---------- */
+let selId = null;
+function renderList(){
+  const ul = document.getElementById('list');
+  BUILDINGS.forEach(b => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="ico">${b.icon}</span>
+      <span><span class="nm">${b.name}</span><br><span class="ty">${b.type} · ${b.year}</span></span>
+      <span class="fl">${b.floors}</span>`;
+    li.onclick = () => selectBuilding(b.id);
+    li.dataset.id = b.id;
+    ul.appendChild(li);
+  });
+  document.getElementById('count').textContent = BUILDINGS.length + ' sites';
+}
+
+function selectBuilding(id){
+  selId = id;
+  const b = BUILDINGS.find(x=>x.id===id);
+  document.querySelectorAll('.panel li').forEach(li => li.classList.toggle('sel', li.dataset.id===id));
+  map.easeTo({center:b.site, zoom:16, pitch:65, duration:800});
+}
+
+function showTip(b, el){
+  const tip = document.getElementById('tooltip');
+  tip.textContent = b.name;
+  const r = el.getBoundingClientRect();
+  tip.style.left = r.left + r.width/2 + 'px';
+  tip.style.top = r.top + 'px';
+  tip.classList.add('show');
+}
+function hideTip(){ document.getElementById('tooltip').classList.remove('show'); }
+
+function toggleTheme(){
+  const isLight = document.body.dataset.theme === 'light';
+  document.body.dataset.theme = isLight ? 'dark' : 'light';
+  document.querySelector('.theme-btn').textContent = isLight ? '☀ LIGHT' : '☾ DARK';
+  map.setStyle(isLight
+    ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+    : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json');
+  // setStyle wipes custom layers — re-add
+  map.once('style.load', () => {
+    if (!map.getLayer('3d-model')) {
+      map.addLayer({
+        id:'3d-model', type:'custom', renderingMode:'3d',
+        onAdd: function(map, gl){ /* re-init three */ },
+        render: function(gl, args){
+          if (!model) return;
+          const m = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix);
+          const modelMatrix = map.transform.getMatrixForModel(
+            maplibregl.MercatorCoordinate.fromLngLat([HK[0],HK[1]], 0)
+          );
+          camera.projectionMatrix = m.multiply(modelMatrix);
+          renderer.resetState(); renderer.render(scene, camera);
+        }
+      });
+    }
+  });
+}
+</script>
+</body>
+</html>
