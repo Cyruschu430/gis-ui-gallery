@@ -23,8 +23,12 @@
 
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="https://unpkg.com/three@0.170.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.170.0/examples/js/loaders/GLTFLoader.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+} }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;510;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
@@ -116,7 +120,10 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);overflo
 <div class="tooltip" id="tooltip"></div>
 <div class="loading" id="loading"><div class="box"><div class="ring"></div><p>Loading 3D model…</p></div></div>
 
-<script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
 /* ================================================================
    ==== SWAP YOUR DATA HERE ====
    Replace BUILDINGS with your building registry. site = [lng, lat].
@@ -145,7 +152,7 @@ map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'bottom-r
 
 /* ---------- three.js custom layer ---------- */
 let renderer, camera, scene, model, raycaster, mouse;
-const loader = new THREE.GLTFLoader();
+const loader = new GLTFLoader();
 
 map.on('load', () => {
   map.addLayer({
