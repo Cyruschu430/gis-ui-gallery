@@ -185,6 +185,9 @@ map.on('load', () => {
         scene.add(model);
         document.getElementById('loading').classList.add('done');
         map.triggerRepaint();
+      }, undefined, err => {
+        console.error('GLB load failed:', err);
+        document.getElementById('loading').classList.add('done');  // don't trap the UI
       });
 
       // markers for buildings
