@@ -108,7 +108,7 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);overflo
       <h1>Kowloon East — 3D Showcase</h1>
       <div class="sub">BUILDING EXPLORER · LITTLESTTOKYO GLB</div>
     </div>
-    <button class="theme-btn" onclick="toggleTheme()">☀ LIGHT</button>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀ LIGHT</button>
   </div>
 
   <div class="panel">
@@ -253,30 +253,13 @@ function showTip(b, el){
 function hideTip(){ document.getElementById('tooltip').classList.remove('show'); }
 
 function toggleTheme(){
+  const btn = document.getElementById('theme-btn');
   const isLight = document.body.dataset.theme === 'light';
   document.body.dataset.theme = isLight ? 'dark' : 'light';
-  document.querySelector('.theme-btn').textContent = isLight ? '☀ LIGHT' : '☾ DARK';
+  btn.textContent = isLight ? '☀ LIGHT' : '☾ DARK';
   map.setStyle(isLight
     ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
     : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json');
-  // setStyle wipes custom layers — re-add
-  map.once('style.load', () => {
-    if (!map.getLayer('3d-model')) {
-      map.addLayer({
-        id:'3d-model', type:'custom', renderingMode:'3d',
-        onAdd: function(map, gl){ /* re-init three */ },
-        render: function(gl, args){
-          if (!model) return;
-          const m = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix);
-          const modelMatrix = map.transform.getMatrixForModel(
-            maplibregl.MercatorCoordinate.fromLngLat([HK[0],HK[1]], 0)
-          );
-          camera.projectionMatrix = m.multiply(modelMatrix);
-          renderer.resetState(); renderer.render(scene, camera);
-        }
-      });
-    }
-  });
 }
 </script>
 </body>
