@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drone Data Hub — GIS UI Gallery</title>
+
+<!--
+  ================================================================
+  DRONE DATA HUB — MapLibre template, data management console
+  ================================================================
+  Single file, no API key. CARTO basemap via MapLibre CDN.
+
+  To go live: replace SEED blocks with your DroneSense / Pix4D / ArcGIS
+  Reality capture API or a hosted GeoJSON export. Expected fields per
+  flight: id, name, drone, pilot, date, area_km2, images, gsd_cm,
+  status, site [lng,lat], progress 0–100.
+
+  The Prompt that built this:
+  "Build a drone fleet + survey management console: status cards up top,
+   sortable mission table on the left, map on the right showing mission
+   polygons with site markers, fleet tab with per-drone battery / cycles.
+   MapLibre, single HTML file."
+-->
+
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;510;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0a0e13; --surface:#11161d; --surface-2:#161d26; --line:rgba(148,196,255,.1);
+  --text:#e8f0f8; --text-2:#8fa3b8; --text-3:#4a5568;
+  --accent:#38bdf8; --good:#4ade80; --warn:#fbbf24; --bad:#f87171; --muted:#64748b;
+  --font-sans:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{background:var(--surface)!important;color:var(--text-3)!important;font-size:10px}
+.maplibregl-ctrl-attrib a{color:var(--text-3)!important}
+
+/* layout: table left, map fills right */
+#app{display:grid;grid-template-columns:420px 1fr;height:100%}
+#panel{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;z-index:2}
+
+/* header */
+.head{padding:16px 18px 10px;border-bottom:1px solid var(--line)}
+.head h1{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.head .sub{font-family:var(--font-mono);font-size:10px;color:var(--text-3);letter-spacing:.06em;margin-top:3px}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.kpi b{font-family:var(--font-mono);font-size:18px;font-weight:600;display:block}
+.kpi span{font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;color:var(--text-3);text-transform:uppercase}
+.kpi.c-good b{color:var(--good)} .kpi.c-warn b{color:var(--warn)} .kpi.c-accent b{color:var(--accent)}
+
+/* tabs */
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tab{flex:1;padding:9px 0;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;
+  color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;transition:120ms;text-transform:uppercase}
+.tab:hover{color:var(--text-2)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* table */
+#missions{flex:1;overflow-y:auto;padding:10px 12px;min-height:0}
+.mission{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:120ms}
+.mission:hover{border-color:rgba(148,196,255,.25)}
+.mission.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.mission .top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.mission .nm{font-size:12.5px;font-weight:600;flex:1}
+.mission .st{font-family:var(--font-mono);font-size:9px;letter-spacing:.05em;padding:2px 7px;border-radius:99px;text-transform:uppercase}
+.st-Planned{color:var(--text-2);background:rgba(148,163,184,.12)}
+.st-Flying{color:var(--accent);background:rgba(56,189,248,.12);animation:pulse 1.6s infinite}
+.st-Processing{color:var(--warn);background:rgba(251,191,36,.12)}
+.st-Complete{color:var(--good);background:rgba(74,222,128,.12)}
+.st-Failed{color:var(--bad);background:rgba(248,113,113,.12)}
+@keyframes pulse{50%{opacity:.5}}
+.mission .meta{font-family:var(--font-mono);font-size:10px;color:var(--text-3);display:flex;gap:12px;flex-wrap:wrap}
+.mission .bar{height:3px;background:rgba(148,163,184,.12);border-radius:2px;margin-top:7px;overflow:hidden}
+.mission .bar i{display:block;height:100%;border-radius:2px}
+
+/* fleet view */
+#fleet{display:none;flex:1;overflow-y:auto;padding:10px 12px;min-height:0}
+.drone{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:8px}
+.drone .top{display:flex;align-items:center;gap:10px}
+.drone .ico{width:34px;height:34px;border-radius:8px;background:rgba(56,189,248,.1);display:grid;place-items:center;font-size:17px;flex:none}
+.drone .nm{font-size:12.5px;font-weight:600}
+.drone .ty{font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)}
+.drone .st{margin-left:auto;font-family:var(--font-mono);font-size:9px;padding:2px 8px;border-radius:99px;text-transform:uppercase}
+.drone .bars{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.drone .row{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)}
+.drone .row span{width:34px}
+.drone .track{flex:1;height:4px;background:rgba(148,163,184,.12);border-radius:2px;overflow:hidden}
+.drone .track i{display:block;height:100%;border-radius:2px}
+
+/* detail drawer */
+.drawer{position:absolute;right:0;top:0;bottom:0;width:300px;background:var(--surface);border-left:1px solid var(--line);
+  padding:16px;transform:translateX(100%);transition:transform .25s cubic-bezier(.2,.75,.25,1);z-index:5;overflow-y:auto}
+.drawer.show{transform:none}
+.drawer h2{font-size:14px;margin-bottom:2px}
+.drawer .mmsi{font-family:var(--font-mono);font-size:10px;color:var(--text-3);margin-bottom:14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px}
+.kv dt{color:var(--text-3);font-family:var(--font-mono);font-size:10px;align-self:center}
+.kv dd{text-align:right;font-family:var(--font-mono);font-size:11px}
+.drawer .close{position:absolute;top:10px;right:12px;background:none;border:0;color:var(--text-3);cursor:pointer;font-size:16px}
+.drawer .close:hover{color:var(--text)}
+
+/* mini progress ring for polygon sites */
+.ring{position:relative;width:34px;height:34px}
+.ring svg{transform:rotate(-90deg)}
+.ring .lbl{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--font-mono);font-size:8px;font-weight:600}
+
+@media (max-width:760px){
+  #app{grid-template-columns:1fr;grid-template-rows:46% 54%}
+  #panel{order:2;border-right:0;border-top:1px solid var(--line)}
+  .drawer{width:100%;border-left:0;border-top:1px solid var(--line);top:auto;bottom:0;height:50%}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="panel">
+    <div class="head">
+      <h1>Drone Data Hub</h1>
+      <div class="sub">UAV FLEET &amp; SURVEY MISSIONS · LIVE</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi c-accent"><b id="k-missions">0</b><span>missions</span></div>
+      <div class="kpi c-good"><b id="k-area">0</b><span>km² surveyed</span></div>
+      <div class="kpi c-warn"><b id="k-images">0</b><span>images</span></div>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-t="missions">Missions</div>
+      <div class="tab" data-t="fleet">Fleet</div>
+    </div>
+    <div id="missions"></div>
+    <div id="fleet"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<div class="drawer" id="drawer">
+  <button class="close" onclick="closeDrawer()" aria-label="Close">×</button>
+  <h2 id="d-name"></h2>
+  <div class="mmsi" id="d-id"></div>
+  <dl class="kv">
+    <dt>DRONE</dt><dd id="d-drone"></dd>
+    <dt>PILOT</dt><dd id="d-pilot"></dd>
+    <dt>DATE</dt><dd id="d-date"></dd>
+    <dt>AREA</dt><dd id="d-area"></dd>
+    <dt>IMAGES</dt><dd id="d-images"></dd>
+    <dt>GSD</dt><dd id="d-gsd"></dd>
+    <dt>STATUS</dt><dd id="d-status"></dd>
+  </dl>
+</div>
+
+<script>
+/* ================================================================
+   ==== SWAP YOUR DATA HERE ====
+   Replace MISSIONS / DRONES with your drone-management API response.
+   site = [lng, lat] centre; polygon = approx capture footprint.
+   ================================================================ */
+const DRONES = [
+  {id:'D01', name:'Matrice 350 RTK', type:'Survey · LiDAR',  battery:86, cycles:142, status:'Ready',   icon:'🛰'},
+  {id:'D02', name:'Mavic 3E',        type:'Photogrammetry',  battery:34, cycles:289, status:'Charging',icon:'📷'},
+  {id:'D03', name:'Phantom 4 RTK',   type:'Photogrammetry',  battery:0,  cycles:512, status:'Maintenance', icon:'🔧'},
+  {id:'D04', name:'Anafi USA',       type:'Inspection · EO/IR', battery:62, cycles:88, status:'Ready', icon:'🎥'},
+  {id:'D05', name:'Skydio X2',       type:'Autonomous patrol', battery:71, cycles:203, status:'Ready', icon:'🚁'},
+];
+
+const MISSIONS = [
+  {id:'MSN-1001', name:'Kai Tak runway resurvey',       drone:'Matrice 350 RTK', pilot:'Chan TM', date:'2026-09-28', area:2.4,  images:1842, gsd:2.1, status:'Complete',   site:[114.2035,22.3225], progress:100, r:.011},
+  {id:'MSN-1002', name:'Kwun Tong rooftop inspection',  drone:'Anafi USA',       pilot:'Wong KK', date:'2026-09-29', area:0.18, images:412,  gsd:1.2, status:'Complete',   site:[114.2156,22.3105], progress:100, r:.004},
+  {id:'MSN-1003', name:'Victoria Harbour shoreline',    drone:'Mavic 3E',        pilot:'Lam SK',  date:'2026-09-30', area:5.8,  images:3904, gsd:2.8, status:'Flying',     site:[114.185, 22.302],  progress:62,  r:.018},
+  {id:'MSN-1004', name:'Lion Rock slope monitoring',    drone:'Matrice 350 RTK', pilot:'Chan TM', date:'2026-10-01', area:1.1,  images:980,  gsd:1.8, status:'Planned',    site:[114.177, 22.352],  progress:0,   r:.008},
+  {id:'MSN-1005', name:'Container terminal T9',         drone:'Skydio X2',       pilot:'Ho CY',   date:'2026-10-02', area:3.2,  images:2210, gsd:3.4, status:'Planned',    site:[114.231, 22.298],  progress:0,   r:.013},
+  {id:'MSN-1006', name:'Tai Po Kau forest canopy',      drone:'Phantom 4 RTK',   pilot:'Lam SK',  date:'2026-09-27', area:6.5,  images:4410, gsd:3.1, status:'Processing', site:[114.195, 22.428],  progress:78,  r:.02},
+  {id:'MSN-1007', name:'MTR depot roof — thermal',      drone:'Anafi USA',       pilot:'Wong KK', date:'2026-09-25', area:0.9,  images:760,  gsd:1.5, status:'Failed',     site:[114.208, 22.3241], progress:41,  r:.007},
+  {id:'MSN-1008', name:'Sheung Wan façade scan',        drone:'Mavic 3E',        pilot:'Ho CY',   date:'2026-10-03', area:0.6,  images:1150, gsd:0.9, status:'Planned',    site:[114.150, 22.286],  progress:0,   r:.006},
+];
+/* ==================== end of data block ======================== */
+
+const STATUS_COLOR = {Planned:'#8fa3b8', Flying:'#38bdf8', Processing:'#fbbf24', Complete:'#4ade80', Failed:'#f87171'};
+const HK = [114.185, 22.32];
+
+/* ---------- map ---------- */
+const map = new maplibregl.Map({
+  container:'map',
+  style:'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  center:HK, zoom:11.5, pitch:30, attributionControl:{compact:true},
+});
+map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'bottom-right');
+
+function polygonAround([lng,lat], r){
+  const pts = [];
+  for (let i=0;i<8;i++){
+    const a = i/8*Math.PI*2;
+    pts.push([lng + Math.cos(a)*r, lat + Math.sin(a)*r*1.3]);
+  }
+  return [...pts, pts[0]];
+}
+
+map.on('load', () => {
+  map.addSource('missions', { type:'geojson', data:{
+    type:'FeatureCollection',
+    features: MISSIONS.map(m => ({
+      type:'Feature',
+      properties:{ ...m, color: STATUS_COLOR[m.status] },
+      geometry:{ type:'Polygon', coordinates:[polygonAround(m.site, m.r)] },
+    })),
+  }});
+  map.addLayer({ id:'m-fill', type:'fill', source:'missions',
+    paint:{ 'fill-color':['get','color'], 'fill-opacity':.16 } });
+  map.addLayer({ id:'m-line', type:'line', source:'missions',
+    paint:{ 'line-color':['get','color'], 'line-width':1.6, 'line-opacity':.8 } });
+  map.addLayer({ id:'m-pt', type:'circle', source:'missions', filter:['!=',['get','status'],'Flying'],
+    paint:{ 'circle-color':['get','color'], 'circle-radius':5, 'circle-stroke-color':'#0a0e13', 'circle-stroke-width':1.5 } });
+
+  // flying marker: pulsing dot via CSS-classed MapLibre marker
+  MISSIONS.filter(m=>m.status==='Flying').forEach(m => {
+    const el = document.createElement('div');
+    el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${STATUS_COLOR.Flying};cursor:pointer;box-shadow:0 0 0 0 rgba(56,189,248,.6);animation:sonar 1.8s infinite`;
+    el.addEventListener('click', () => openMission(m.id));
+    new maplibregl.Marker({element:el}).setLngLat(m.site).addTo(map);
+  });
+
+  map.on('click','m-fill', e => {
+    const id = e.features[0].properties.id;
+    openMission(id);
+    highlightList(id);
+  });
+  map.on('mouseenter','m-fill', () => map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','m-fill', () => map.getCanvas().style.cursor='');
+});
+
+/* ---------- list ---------- */
+function renderMissions(){
+  const el = document.getElementById('missions'); el.innerHTML = '';
+  MISSIONS.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'mission'; div.dataset.id = m.id;
+    div.innerHTML = `
+      <div class="top">
+        <span class="nm">${m.name}</span>
+        <span class="st st-${m.status}">${m.status}</span>
+      </div>
+      <div class="meta">
+        <span>${m.drone.split(' ')[0]}</span><span>${m.date}</span>
+        <span>${m.area} km²</span><span>${m.images.toLocaleString()} img</span>
+      </div>
+      <div class="bar"><i style="width:${m.progress}%;background:${STATUS_COLOR[m.status]}"></i></div>`;
+    div.onclick = () => { openMission(m.id); highlightList(m.id);
+      map.easeTo({center:m.site, zoom:13.5, duration:700}); };
+    el.appendChild(div);
+  });
+  document.getElementById('k-missions').textContent = MISSIONS.length;
+  document.getElementById('k-area').textContent = MISSIONS.reduce((s,m)=>s+m.area,0).toFixed(1);
+  document.getElementById('k-images').textContent = (MISSIONS.reduce((s,m)=>s+m.images,0)/1000).toFixed(1)+'k';
+}
+
+function renderFleet(){
+  const el = document.getElementById('fleet'); el.innerHTML = '';
+  DRONES.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'drone';
+    const stColor = d.status==='Ready' ? 'var(--good)' : d.status==='Charging' ? 'var(--warn)' : 'var(--bad)';
+    div.innerHTML = `
+      <div class="top">
+        <span class="ico">${d.icon}</span>
+        <span><span class="nm">${d.name}</span><br><span class="ty">${d.id} · ${d.type}</span></span>
+        <span class="st" style="color:${stColor};background:color-mix(in srgb,${stColor} 12%,transparent)">${d.status}</span>
+      </div>
+      <div class="bars">
+        <div class="row"><span>BATT</span><div class="track"><i style="width:${d.battery}%;background:${d.battery>50?'var(--good)':d.battery>20?'var(--warn)':'var(--bad)'}"></i></div><b>${d.battery}%</b></div>
+        <div class="row"><span>CYCLES</span><div class="track"><i style="width:${Math.min(d.cycles/6,100)}%;background:var(--accent)"></i></div><b>${d.cycles}</b></div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+/* ---------- drawer ---------- */
+function openMission(id){
+  const m = MISSIONS.find(x=>x.id===id); if (!m) return;
+  document.getElementById('d-name').textContent = m.name;
+  document.getElementById('d-id').textContent = m.id + ' · ' + m.status.toUpperCase();
+  document.getElementById('d-drone').textContent = m.drone;
+  document.getElementById('d-pilot').textContent = m.pilot;
+  document.getElementById('d-date').textContent = m.date;
+  document.getElementById('d-area').textContent = m.area + ' km²';
+  document.getElementById('d-images').textContent = m.images.toLocaleString();
+  document.getElementById('d-gsd').textContent = m.gsd + ' cm/px';
+  document.getElementById('d-status').textContent = m.status.toUpperCase();
+  document.getElementById('drawer').classList.add('show');
+  highlightList(id);
+}
+function closeDrawer(){ document.getElementById('drawer').classList.remove('show');
+  document.querySelectorAll('.mission').forEach(el=>el.classList.remove('sel')); }
+function highlightList(id){
+  document.querySelectorAll('.mission').forEach(el=>el.classList.toggle('sel', el.dataset.id===id));
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  const isM = t.dataset.t === 'missions';
+  document.getElementById('missions').style.display = isM ? '' : 'none';
+  document.getElementById('fleet').style.display = isM ? 'none' : '';
+}));
+
+renderMissions(); renderFleet();
+</script>
+</body>
+</html>
