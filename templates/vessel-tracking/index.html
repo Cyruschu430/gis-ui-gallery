@@ -23,7 +23,6 @@
   --bg:#070b12; --glass:rgba(13,19,30,.78); --glass-border:rgba(148,196,255,.12);
   --text:#e8f0f8; --text-2:rgba(232,240,248,.55); --text-3:rgba(232,240,248,.32);
   --accent:#38bdf8; --accent-soft:rgba(56,189,248,.14); --ok:#4ade80; --warn:#fbbf24; --danger:#f87171;
-  --map-style:"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
   --font-ui:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
   --radius:12px; --glow:0 0 24px rgba(56,189,248,.18);
   --panel-title-transform:uppercase; --panel-title-ls:.09em;
@@ -32,14 +31,12 @@
   --bg:#eef1f4; --glass:rgba(255,255,255,.85); --glass-border:rgba(15,23,42,.09);
   --text:#0f172a; --text-2:rgba(15,23,42,.6); --text-3:rgba(15,23,42,.38);
   --accent:#2563eb; --accent-soft:rgba(37,99,235,.1); --ok:#16a34a; --warn:#d97706; --danger:#dc2626;
-  --map-style:"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
   --glow:0 6px 24px rgba(15,23,42,.08);
 }
 [data-theme="ink"]{
   --bg:#14120e; --glass:rgba(246,242,232,.92); --glass-border:rgba(60,48,32,.16);
   --text:#2b2620; --text-2:rgba(43,38,32,.62); --text-3:rgba(43,38,32,.4);
   --accent:#8c2f2f; --accent-soft:rgba(140,47,47,.1); --ok:#3d6b4f; --warn:#a26d1f; --danger:#8c2f2f;
-  --map-style:"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
   --font-ui:'Noto Serif TC','Inter',serif; --glow:0 4px 18px rgba(60,48,32,.18);
   --radius:4px; --panel-title-transform:none; --panel-title-ls:.28em;
 }
@@ -201,9 +198,14 @@ let selectedId = null;
 const markers = new Map();
 
 /* ---------- map ---------- */
-function currentStyle(){ return getComputedStyle(document.body).getPropertyValue('--map-style').trim().replace(/"/g,''); }
+// ponytail: basemap per theme lives in JS, not CSS — a style URL is config, not styling
+const MAP_STYLES = {
+  console: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  light:   'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  ink:     'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+};
 const map = new maplibregl.Map({
-  container:'map', style: JSON.parse(currentStyle()),
+  container:'map', style: MAP_STYLES.console,
   center: HK, zoom: 12.4, pitch: 45, bearing: -12, attributionControl:{compact:true},
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
@@ -308,7 +310,7 @@ function clock(){
 document.querySelectorAll('.themes button').forEach(btn => btn.addEventListener('click', () => {
   document.querySelectorAll('.themes button').forEach(b=>b.classList.toggle('on', b===btn));
   document.body.dataset.theme = btn.dataset.t;
-  map.setStyle(JSON.parse(currentStyle()));
+  map.setStyle(MAP_STYLES[btn.dataset.t]);
   // setStyle wipes custom layers — re-add trails source
   map.once('style.load', () => {
     if (!map.getSource('trails')) {
