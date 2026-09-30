@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vessel Tracking — GIS UI Gallery</title>
+
+<!-- MapLibre GL JS: open-source, no API key required -->
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<!--
+  PREFER ARCGIS? Replace initMap() + the two layer blocks with the ArcGIS Maps SDK
+  for JS (https://js.arcgis.com/4.x/) and point a FeatureLayer at your vessel
+  Feature Service. UI (panels, theme, list) does not change.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;510;600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet">
+
+<style>
+/* ================================================================
+   THEME TOKENS — three skins. Everything visual lives here.
+   ================================================================ */
+:root, [data-theme="console"]{
+  --bg:#070b12; --glass:rgba(13,19,30,.78); --glass-border:rgba(148,196,255,.12);
+  --text:#e8f0f8; --text-2:rgba(232,240,248,.55); --text-3:rgba(232,240,248,.32);
+  --accent:#38bdf8; --accent-soft:rgba(56,189,248,.14); --ok:#4ade80; --warn:#fbbf24; --danger:#f87171;
+  --map-style:"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+  --font-ui:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --radius:12px; --glow:0 0 24px rgba(56,189,248,.18);
+  --panel-title-transform:uppercase; --panel-title-ls:.09em;
+}
+[data-theme="light"]{
+  --bg:#eef1f4; --glass:rgba(255,255,255,.85); --glass-border:rgba(15,23,42,.09);
+  --text:#0f172a; --text-2:rgba(15,23,42,.6); --text-3:rgba(15,23,42,.38);
+  --accent:#2563eb; --accent-soft:rgba(37,99,235,.1); --ok:#16a34a; --warn:#d97706; --danger:#dc2626;
+  --map-style:"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+  --glow:0 6px 24px rgba(15,23,42,.08);
+}
+[data-theme="ink"]{
+  --bg:#14120e; --glass:rgba(246,242,232,.92); --glass-border:rgba(60,48,32,.16);
+  --text:#2b2620; --text-2:rgba(43,38,32,.62); --text-3:rgba(43,38,32,.4);
+  --accent:#8c2f2f; --accent-soft:rgba(140,47,47,.1); --ok:#3d6b4f; --warn:#a26d1f; --danger:#8c2f2f;
+  --map-style:"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+  --font-ui:'Noto Serif TC','Inter',serif; --glow:0 4px 18px rgba(60,48,32,.18);
+  --radius:4px; --panel-title-transform:none; --panel-title-ls:.28em;
+}
+
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{background:var(--glass)!important;color:var(--text-3)!important;font-size:10px}
+.maplibregl-ctrl-attrib a{color:var(--text-3)!important}
+
+/* ---------- HUD frame ---------- */
+.hud{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:18px}
+.hud>*{pointer-events:auto}
+
+/* top bar */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.title-block{background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:12px 18px;box-shadow:var(--glow)}
+.title-block h1{font-size:15px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
+[data-theme="ink"] .title-block h1{font-size:17px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:blink 1.8s infinite}
+@keyframes blink{50%{opacity:.3}}
+.title-block .sub{font-family:var(--font-mono);font-size:10.5px;color:var(--text-3);margin-top:4px;letter-spacing:.06em}
+
+/* theme switcher */
+.themes{display:flex;background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:4px;gap:2px;box-shadow:var(--glow)}
+.themes button{border:0;background:none;color:var(--text-3);font-family:var(--font-mono);font-size:10.5px;
+  letter-spacing:.05em;padding:7px 12px;border-radius:calc(var(--radius) - 4px);cursor:pointer;transition:150ms}
+.themes button:hover{color:var(--text-2)}
+.themes button.on{background:var(--accent-soft);color:var(--accent)}
+[data-theme="ink"] .themes button.on{color:var(--accent)}
+
+/* ---------- left: vessel list ---------- */
+.fleet{width:264px;background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);
+  border-radius:var(--radius);box-shadow:var(--glow);display:flex;flex-direction:column;max-height:min(58vh,480px);
+  position:absolute;left:18px;top:96px}
+.fleet header{padding:11px 14px;border-bottom:1px solid var(--glass-border);display:flex;justify-content:space-between;align-items:baseline}
+.fleet header h2{font-size:10.5px;font-weight:600;letter-spacing:var(--panel-title-ls);text-transform:var(--panel-title-transform);color:var(--text-2)}
+.fleet header span{font-family:var(--font-mono);font-size:10px;color:var(--accent)}
+.fleet ul{list-style:none;padding:6px;overflow-y:auto}
+.fleet li{padding:8px 10px;border-radius:calc(var(--radius) - 4px);cursor:pointer;display:flex;align-items:center;gap:10px;transition:120ms}
+.fleet li:hover{background:var(--accent-soft)}
+.fleet li.sel{background:var(--accent-soft);outline:1px solid var(--accent)}
+.fleet .ico{width:26px;height:26px;border-radius:7px;background:var(--accent-soft);display:grid;place-items:center;font-size:13px;flex:none}
+.fleet .nm{font-size:12.5px;font-weight:510;line-height:1.2}
+.fleet .ty{font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)}
+.fleet .st{margin-left:auto;font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:99px;flex:none}
+.st.underway{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.st.anchored{color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+
+/* ---------- right: detail panel ---------- */
+.detail{width:270px;background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);
+  border-radius:var(--radius);box-shadow:var(--glow);padding:16px;position:absolute;right:18px;top:96px;
+  transform:translateX(120%);transition:transform .3s cubic-bezier(.2,.75,.25,1)}
+.detail.show{transform:none}
+.detail h2{font-size:14px;font-weight:600;margin-bottom:2px}
+.detail .mmsi{font-family:var(--font-mono);font-size:10px;color:var(--text-3);margin-bottom:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12px}
+.kv dt{color:var(--text-3);font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;align-self:center}
+.kv dd{text-align:right;font-family:var(--font-mono);font-size:11.5px}
+.detail .close{position:absolute;top:10px;right:12px;border:0;background:none;color:var(--text-3);cursor:pointer;font-size:15px}
+.detail .close:hover{color:var(--text)}
+
+/* ---------- bottom: stats bar ---------- */
+.stats{display:flex;gap:10px;align-self:center}
+.stat{background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:var(--radius);
+  padding:9px 16px;text-align:center;box-shadow:var(--glow);min-width:96px}
+.stat b{font-family:var(--font-mono);font-size:16px;font-weight:600;display:block;color:var(--accent)}
+[data-theme="ink"] .stat b{color:var(--accent)}
+.stat span{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--text-3);text-transform:uppercase}
+
+/* vessel marker */
+.vessel{width:22px;height:22px;display:grid;place-items:center;cursor:pointer}
+.vessel svg{transition:transform .2s;filter:drop-shadow(0 0 4px var(--accent))}
+.vessel.sel svg path{fill:var(--danger)}
+
+@media (max-width:760px){
+  .fleet{display:none} /* ponytail: mobile = map + detail only */
+  .stats{flex-wrap:wrap;justify-content:center}
+}
+</style>
+</head>
+<body data-theme="console">
+
+<div id="map"></div>
+
+<div class="hud">
+  <div class="topbar">
+    <div class="title-block">
+      <h1><span class="pulse"></span>Victoria Harbour — Vessel Traffic</h1>
+      <div class="sub" id="clock">--:--:-- HKT · SIMULATED AIS</div>
+    </div>
+    <div class="themes" role="group" aria-label="Theme">
+      <button data-t="console" class="on">CONSOLE</button>
+      <button data-t="light">CLEAN</button>
+      <button data-t="ink">水墨</button>
+    </div>
+  </div>
+
+  <aside class="fleet">
+    <header><h2>Fleet</h2><span id="count"></span></header>
+    <ul id="fleet-list"></ul>
+  </aside>
+
+  <aside class="detail" id="detail">
+    <button class="close" onclick="selectVessel(null)" aria-label="Close">×</button>
+    <h2 id="d-name"></h2>
+    <div class="mmsi" id="d-mmsi"></div>
+    <dl class="kv">
+      <dt>TYPE</dt><dd id="d-type"></dd>
+      <dt>SPEED</dt><dd id="d-sog"></dd>
+      <dt>HEADING</dt><dd id="d-hdg"></dd>
+      <dt>STATUS</dt><dd id="d-status"></dd>
+      <dt>DEST</dt><dd id="d-dest"></dd>
+    </dl>
+  </aside>
+
+  <div class="stats">
+    <div class="stat"><b id="s-total">0</b><span>tracked</span></div>
+    <div class="stat"><b id="s-moving">0</b><span>underway</span></div>
+    <div class="stat"><b id="s-speed">0</b><span>avg kn</span></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   ==== SWAP YOUR DATA HERE ====
+   Replace this block with a fetch() to your AIS / fleet API or an
+   ArcGIS Feature Service query. Expected fields per vessel:
+   { id, name, type, mmsi, lng, lat, heading(deg), speed(kn), dest,
+     status: 'underway'|'anchored', trail: [[lng,lat],...] }
+   ================================================================ */
+const ICONS = { Ferry:'⛴', Cargo:'🚢', Tug:'🛠', Barge:'📦', Patrol:'🛡' };
+function seedFleet(){
+  const defs = [
+    ['Star Ferry 晨星','Ferry','477123401',114.169,22.293,  0,5.2,'Central ↔ TST'],
+    ['COSCO HARMONY','Cargo','477230155',114.205,22.305, 95,9.4,'Kwai Chung T9'],
+    ['Yau Ma Tei Tug 7','Tug','477880213',114.155,22.312,210,3.1,'YMT Typhoon'],
+    ['HK-Macau TurboJET','Ferry','477550871',114.152,22.288,255,32.0,'Macau Outer'],
+    ['Police Launch 63','Patrol','477001063',114.225,22.292,140,18.5,'Patrol Sector E'],
+    ['Pearl River Barge 12','Barge','477665512',114.185,22.318, 75,4.6,'River Trade Tml'],
+    ['Hoi You Ferry 海佑','Ferry','477440930',114.240,22.285,290,8.8,'North Point'],
+    ['OOCL HONG KONG','Cargo','477311208',114.128,22.330,110,6.2,'Anchorage A3'],
+  ];
+  return defs.map((d,i)=>({
+    id:i, name:d[0], type:d[1], mmsi:d[2], lng:d[3], lat:d[4],
+    heading:d[5], speed:d[6], dest:d[7],
+    status: d[6] > 0.5 ? 'underway' : 'anchored',
+    trail: [], _tick: Math.random()*Math.PI*2,
+  }));
+}
+/* ==================== end of data block ======================== */
+
+const HK = [114.185, 22.300];
+let vessels = seedFleet();
+let selectedId = null;
+const markers = new Map();
+
+/* ---------- map ---------- */
+function currentStyle(){ return getComputedStyle(document.body).getPropertyValue('--map-style').trim().replace(/"/g,''); }
+const map = new maplibregl.Map({
+  container:'map', style: JSON.parse(currentStyle()),
+  center: HK, zoom: 12.4, pitch: 45, bearing: -12, attributionControl:{compact:true},
+});
+map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
+
+map.on('load', () => {
+  map.addSource('trails', { type:'geojson', data:{type:'FeatureCollection',features:[]} });
+  map.addLayer({ id:'trails', type:'line', source:'trails',
+    paint:{ 'line-color':'#38bdf8', 'line-width':1.5, 'line-opacity':.45, 'line-dasharray':[2,2] } });
+  vessels.forEach(addMarker);
+  setInterval(tick, 1500);  // simulated AIS push
+  setInterval(clock, 1000); clock();
+  refreshList(); refreshStats();
+});
+
+function addMarker(v){
+  const el = document.createElement('div');
+  el.className = 'vessel';
+  el.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" style="transform:rotate(${v.heading}deg)">
+    <path d="M12 2 L19 21 L12 17 L5 21 Z" fill="var(--accent)"/></svg>`;
+  el.addEventListener('click', e => { e.stopPropagation(); selectVessel(v.id); });
+  const m = new maplibregl.Marker({element:el}).setLngLat([v.lng, v.lat]).addTo(map);
+  markers.set(v.id, m);
+}
+
+/* ---------- simulation (replace with your live feed) ---------- */
+function tick(){
+  vessels.forEach(v => {
+    if (v.speed < 0.5) return;
+    const drift = Math.sin(Date.now()/9000 + v._tick) * 4;
+    const hdg = (v.heading + drift) * Math.PI/180;
+    const step = v.speed * 0.0000045 * 1.5;   // kn → deg per tick (approx, for demo)
+    v.lng += Math.sin(hdg) * step; v.lat += Math.cos(hdg) * step;
+    v.trail.push([v.lng, v.lat]);
+    if (v.trail.length > 40) v.trail.shift();
+    // keep them in the harbour: bounce off an invisible box
+    if (v.lng < 114.10 || v.lng > 114.27) v.heading = (180 - v.heading + 360) % 360;
+    if (v.lat < 22.27 || v.lat > 22.345) v.heading = (360 - v.heading) % 360;
+    const el = markers.get(v.id).getElement();
+    el.querySelector('svg').style.transform = `rotate(${v.heading}deg)`;
+    markers.get(v.id).setLngLat([v.lng, v.lat]);
+  });
+  const src = map.getSource('trails');
+  if (src) src.setData({ type:'FeatureCollection', features: vessels.filter(v=>v.trail.length>1).map(v=>({
+    type:'Feature', properties:{}, geometry:{type:'LineString', coordinates:v.trail} })) });
+  refreshStats();
+  if (selectedId !== null) fillDetail(vessels.find(v=>v.id===selectedId));
+}
+
+/* ---------- UI wiring ---------- */
+function refreshList(){
+  const ul = document.getElementById('fleet-list');
+  ul.innerHTML = '';
+  vessels.forEach(v => {
+    const li = document.createElement('li');
+    if (v.id === selectedId) li.classList.add('sel');
+    li.innerHTML = `<span class="ico">${ICONS[v.type]||'⛵'}</span>
+      <span><span class="nm">${v.name}</span><br><span class="ty">${v.type} · ${v.mmsi}</span></span>
+      <span class="st ${v.status}">${v.status.toUpperCase()}</span>`;
+    li.onclick = () => selectVessel(v.id);
+    ul.appendChild(li);
+  });
+  document.getElementById('count').textContent = vessels.length + ' contacts';
+}
+
+function selectVessel(id){
+  selectedId = id;
+  document.querySelectorAll('.vessel').forEach(el=>el.classList.remove('sel'));
+  document.querySelectorAll('.fleet li').forEach(li=>li.classList.remove('sel'));
+  if (id === null){ document.getElementById('detail').classList.remove('show'); return; }
+  const v = vessels.find(x=>x.id===id);
+  markers.get(id).getElement().classList.add('sel');
+  fillDetail(v);
+  document.getElementById('detail').classList.add('show');
+  map.easeTo({center:[v.lng, v.lat], duration:600});
+  refreshList();
+}
+
+function fillDetail(v){
+  document.getElementById('d-name').textContent = v.name;
+  document.getElementById('d-mmsi').textContent = 'MMSI ' + v.mmsi;
+  document.getElementById('d-type').textContent = v.type;
+  document.getElementById('d-sog').textContent = v.speed.toFixed(1) + ' kn';
+  document.getElementById('d-hdg').textContent = String(Math.round(v.heading)).padStart(3,'0') + '°';
+  document.getElementById('d-status').textContent = v.status.toUpperCase();
+  document.getElementById('d-dest').textContent = v.dest;
+}
+
+function refreshStats(){
+  const moving = vessels.filter(v=>v.status==='underway');
+  document.getElementById('s-total').textContent = vessels.length;
+  document.getElementById('s-moving').textContent = moving.length;
+  document.getElementById('s-speed').textContent =
+    (moving.reduce((s,v)=>s+v.speed,0)/(moving.length||1)).toFixed(1);
+}
+
+function clock(){
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-HK',{hour12:false,timeZone:'Asia/Hong_Kong'}) + ' HKT · SIMULATED AIS';
+}
+
+/* ---------- theme switcher ---------- */
+document.querySelectorAll('.themes button').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.themes button').forEach(b=>b.classList.toggle('on', b===btn));
+  document.body.dataset.theme = btn.dataset.t;
+  map.setStyle(JSON.parse(currentStyle()));
+  // setStyle wipes custom layers — re-add trails source
+  map.once('style.load', () => {
+    if (!map.getSource('trails')) {
+      map.addSource('trails', { type:'geojson', data:{type:'FeatureCollection',features:[]} });
+      map.addLayer({ id:'trails', type:'line', source:'trails',
+        paint:{ 'line-color':'#38bdf8', 'line-width':1.5, 'line-opacity':.45, 'line-dasharray':[2,2] } });
+    }
+  });
+}));
+</script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GIS UI Gallery — plug-and-play map app templates</title>
+<meta name="description" content="Single-file, copy-paste UI templates for map applications. MapLibre by default, ArcGIS-ready.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;510;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#08090a; --surface:#101114; --surface2:#16181d;
+    --border:rgba(255,255,255,.07); --border-hi:rgba(255,255,255,.16);
+    --text:#f7f8f8; --text-2:rgba(247,248,248,.55); --text-3:rgba(247,248,248,.32);
+    --accent:#5e6ad2; --accent-hi:#7c86e8;
+    --mono:'JetBrains Mono',monospace; --sans:'Inter',-apple-system,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+  /* ---------- header ---------- */
+  header{position:sticky;top:0;z-index:50;background:rgba(8,9,10,.8);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .hd{display:flex;align-items:center;justify-content:space-between;height:56px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em}
+  .brand .dot{width:9px;height:9px;border-radius:2px;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .brand small{font-weight:400;color:var(--text-3);font-family:var(--mono);font-size:11px;margin-left:4px}
+  .hd nav{display:flex;gap:6px}
+  .hd nav a{font-size:13px;color:var(--text-2);padding:6px 12px;border-radius:8px;transition:150ms}
+  .hd nav a:hover{color:var(--text);background:var(--surface2)}
+  .gh-btn{display:flex;align-items:center;gap:7px;font-size:13px;border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text-2)}
+  .gh-btn:hover{border-color:var(--border-hi);color:var(--text)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:88px 0 56px;text-align:center;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:-40% -10% auto;height:420px;
+    background:radial-gradient(closest-side,rgba(94,106,210,.16),transparent 70%);pointer-events:none}
+  .hero h1{font-size:clamp(30px,5vw,46px);font-weight:600;letter-spacing:-.03em;line-height:1.12;position:relative}
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-hi),#a5b4fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--text-2);max-width:560px;margin:18px auto 0;font-size:16px}
+  .hero .chips{display:flex;gap:8px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:11.5px;color:var(--text-2);border:1px solid var(--border);border-radius:99px;padding:5px 12px;background:var(--surface)}
+
+  /* ---------- filters ---------- */
+  .filters{display:flex;gap:8px;flex-wrap:wrap;padding:26px 0 6px;border-top:1px solid var(--border)}
+  .fbtn{font-family:var(--mono);font-size:12px;color:var(--text-2);background:none;border:1px solid var(--border);
+    border-radius:8px;padding:7px 14px;cursor:pointer;transition:150ms}
+  .fbtn:hover{color:var(--text);border-color:var(--border-hi)}
+  .fbtn.on{color:var(--text);border-color:var(--accent);background:rgba(94,106,210,.12)}
+
+  /* ---------- grid ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;padding:26px 0 90px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:180ms;display:flex;flex-direction:column}
+  .card:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+  .thumb{aspect-ratio:16/9;position:relative;overflow:hidden;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+  .thumb svg{position:absolute;inset:0;width:100%;height:100%}
+  .thumb .live{position:absolute;top:10px;left:10px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+    background:rgba(8,9,10,.72);border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:#4ade80;display:flex;gap:6px;align-items:center}
+  .thumb .live::before{content:"";width:5px;height:5px;border-radius:50%;background:#4ade80;animation:blink 1.6s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .thumb .soon{font-family:var(--mono);font-size:11px;color:var(--text-3);letter-spacing:.06em}
+  .cbody{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .cbody h3{font-size:16px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;justify-content:space-between}
+  .cbody h3 .cat{font-family:var(--mono);font-size:10px;font-weight:400;color:var(--accent-hi);border:1px solid rgba(94,106,210,.35);border-radius:5px;padding:2px 7px}
+  .cbody p{font-size:13px;color:var(--text-2);flex:1}
+  .cmeta{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+  .skins{display:flex;gap:5px}
+  .skins i{width:12px;height:12px;border-radius:4px;border:1px solid var(--border-hi)}
+  .open{font-family:var(--mono);font-size:12px;color:var(--text-3)}
+  a.card:hover .open{color:var(--accent-hi)}
+  .card.disabled{opacity:.55}
+  .card.disabled:hover{transform:none;border-color:var(--border)}
+
+  footer{border-top:1px solid var(--border);padding:32px 0 48px;color:var(--text-3);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  footer code{font-family:var(--mono);font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hd">
+    <div class="brand"><span class="dot"></span>GIS UI Gallery<small>plug &amp; play map templates</small></div>
+    <nav>
+      <a href="#grid">Templates</a>
+      <a class="gh-btn" href="https://github.com/Cyruschu430/gis-ui-gallery" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero wrap">
+  <h1>Map UIs you can <em>copy, paste &amp; ship</em>.</h1>
+  <p>Single-file templates for geospatial apps. No build step. MapLibre by default, ArcGIS-ready. Pick a skin, swap the data block, done.</p>
+  <div class="chips">
+    <span class="chip">single HTML file</span>
+    <span class="chip">zero npm / zero build</span>
+    <span class="chip">3 skins per template</span>
+    <span class="chip">MIT licensed</span>
+  </div>
+</section>
+
+<div class="wrap" id="grid">
+  <div class="filters" id="filters">
+    <button class="fbtn on" data-f="all">all</button>
+    <button class="fbtn" data-f="realtime">real-time monitoring</button>
+    <button class="fbtn" data-f="infoboard">info board</button>
+    <button class="fbtn" data-f="datamgmt">data management</button>
+    <button class="fbtn" data-f="field">field &amp; work order</button>
+    <button class="fbtn" data-f="3d">2D / 3D</button>
+  </div>
+
+  <div class="grid" id="cards">
+
+    <!-- ============ TEMPLATE CARDS: add one block per template ============ -->
+
+    <a class="card" data-cat="realtime" href="templates/vessel-tracking/">
+      <div class="thumb">
+        <!-- stylised harbour preview -->
+        <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="180" fill="#0a1420"/>
+          <path d="M0 60 Q80 40 160 62 T320 55 V180 H0Z" fill="#0e2a3a"/>
+          <path d="M0 100 Q90 84 170 102 T320 95 V180 H0Z" fill="#123549"/>
+          <g stroke="#5e6ad2" stroke-width="1" opacity=".6">
+            <path d="M40 130 l10 -6 10 6 -10 6z" fill="#5e6ad2"/>
+            <path d="M150 112 l10 -6 10 6 -10 6z" fill="#7c86e8"/>
+            <path d="M240 140 l10 -6 10 6 -10 6z" fill="#5e6ad2"/>
+          </g>
+          <circle cx="50" cy="130" r="14" fill="none" stroke="#5e6ad2" opacity=".5"/>
+          <circle cx="160" cy="112" r="18" fill="none" stroke="#7c86e8" opacity=".35"/>
+          <circle cx="250" cy="140" r="12" fill="none" stroke="#5e6ad2" opacity=".4"/>
+          <g fill="#f7f8f8" opacity=".25" font-size="7" font-family="monospace">
+            <text x="14" y="24">LAT 22.318</text><text x="14" y="34">LON 114.169</text>
+          </g>
+        </svg>
+        <span class="live">LIVE</span>
+      </div>
+      <div class="cbody">
+        <h3>Vessel Tracking <span class="cat">realtime</span></h3>
+        <p>Real-time harbour console: animated vessel positions on simulated AIS, click-to-inspect panel, heading vectors and trails.</p>
+        <div class="cmeta">
+          <span class="skins" title="skins">
+            <i style="background:#0a1420"></i><i style="background:#f4f2ec"></i><i style="background:#1c1a17"></i>
+          </span>
+          <span class="open">open →</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- upcoming placeholders (rendered dim; remove .disabled + add href when shipped) -->
+    <div class="card disabled" data-cat="infoboard">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>中國風資訊版 <span class="cat">infoboard</span></h3>
+        <p>Ink-wash styled city info board — a GIS dashboard that doesn't look like every other dashboard.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#f4f2ec"></i><i style="background:#1c1a17"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="field">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Field Work Orders <span class="cat">field</span></h3>
+        <p>Job list + map side-by-side: status filters, priority badges, route-to-site. The template most teams actually need.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a1420"></i><i style="background:#f4f2ec"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="3d">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>3D Building Showcase <span class="cat">3d</span></h3>
+        <p>SceneView-style building explorer with floor filter and attribute widget. ArcGIS variant included.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a1420"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;width:100%">
+    <span>GIS UI Gallery · MIT · <a href="https://github.com/Cyruschu430/gis-ui-gallery" target="_blank" rel="noopener" style="color:var(--text-2)">contribute / suggest a template →</a></span>
+    <code>copy → swap data → ship</code>
+  </div>
+</footer>
+
+<script>
+  // ponytail: 20 lines of filter JS, no framework needed at this size
+  document.getElementById('filters').addEventListener('click', e => {
+    const btn = e.target.closest('.fbtn'); if (!btn) return;
+    document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('on', b === btn));
+    const f = btn.dataset.f;
+    document.querySelectorAll('.card').forEach(c => {
+      c.style.display = (f === 'all' || c.dataset.cat === f) ? '' : 'none';
+    });
+  });
+</script>
+</body>
+</html>
