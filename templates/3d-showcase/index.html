@@ -108,7 +108,7 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);overflo
       <h1>Kowloon East — 3D Showcase</h1>
       <div class="sub">BUILDING EXPLORER · LITTLESTTOKYO GLB</div>
     </div>
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀ LIGHT</button>
+    <button class="theme-btn" id="theme-btn">☀ LIGHT</button>
   </div>
 
   <div class="panel">
@@ -261,6 +261,7 @@ function toggleTheme(){
     ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
     : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json');
 }
+document.getElementById('theme-btn').addEventListener('click', toggleTheme);
 </script>
 </body>
 </html>
