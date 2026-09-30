@@ -206,8 +206,8 @@ document.getElementById('filters').addEventListener('click', e => {
 });
 
 view.whenLayerView(layer).then(async lv => {
-  await view.when();   // wait until view is ready so queryFeatures resolves
-  const res = await lv.queryFeatures({ outFields:['*'], returnGeometry:true });
+  // ponytail: query the layer, not the layerView — client-side FeatureLayer resolves without needing the view to be ready
+  const res = await layer.queryFeatures({ outFields:['*'], returnGeometry:true });
   graphics = res.features;
   render();
   // map click → select matching job in list
