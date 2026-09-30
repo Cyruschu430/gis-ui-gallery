@@ -195,6 +195,9 @@ async function selectJob(oid){
   if (!g) return;
   render();
   await view.goTo({target:g.geometry, zoom:16}, {duration:500});
+  // ponytail: feature.popupTemplate is null on query results; point it at the
+  // layer's template — fields won't render without it, and open() no-ops
+  g.popupTemplate = layer.popupTemplate;
   view.openPopup({ features:[g], location:g.geometry });
 }
 
