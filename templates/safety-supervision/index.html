@@ -239,7 +239,7 @@ function renderZones(){
     li.innerHTML = `<span class="dot" style="background:${z.color}"></span>
       <span class="nm">${z.name}</span>
       <span class="st ${z.status}">${z.status}</span>`;
-    li.onclick = () => { selectZone(z.id); openAlertForZone(z.id); map.easeTo({center:centroid(z.ring), zoom:17, duration:600}); };
+    li.onclick = () => { selectZone(z.id); openAlertForZone(z.id); };
     ul.appendChild(li);
   });
 }
