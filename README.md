@@ -13,12 +13,18 @@ Plug-and-play UI templates for map apps. Copy one HTML file, swap the data block
 
 ## Templates
 
-| Template | Category | Skins |
-|---|---|---|
+| Template | Category | Stack | Skins |
+|---|---|---|---|
 | [Vessel Tracking](templates/vessel-tracking/) | Real-time monitoring | MapLibre | Dark console · Clean light · 水墨 |
+| [中國風資訊版](templates/ink-infoboard/) | Info board | MapLibre | Ink wash · paper texture |
 | [Field Work Orders](templates/work-orders/) | Field & work order | **ArcGIS JS SDK + Calcite** | Dark dashboard |
+| [Drone Data Hub](templates/drone-hub/) | Data management | MapLibre | Dark console |
+| [3D Building Showcase](templates/3d-showcase/) | 3D | MapLibre + three.js | Dark / Light |
+| [Smart Safety Supervision](templates/safety-supervision/) | Real-time monitoring | MapLibre | Dark console |
+| [Utility Network Trace](templates/utility-network/) | Data management | **ArcGIS JS SDK** | Dark console |
+| [Tree Management](templates/tree-management/) | Data management · chat | MapLibre | Dark console |
 
-More coming: smart site supervision, asset management, drone data hub, tree management, work order, building showcase, utility network.
+More coming: asset management, building showcase with floor filter, and more.
 
 ## Using a template
 
