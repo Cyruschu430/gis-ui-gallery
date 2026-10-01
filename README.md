@@ -1,6 +1,6 @@
-# GIS UI Gallery
+# GIS UI/UX Gallery
 
-Plug-and-play UI templates for map apps. Copy one HTML file, swap the data block at the top, ship it.
+Plug-and-play UI/UX templates for map apps. Copy one HTML file, swap the data block at the top, ship it.
 
 **Live gallery:** https://cyruschu430.github.io/gis-ui-gallery/
 
