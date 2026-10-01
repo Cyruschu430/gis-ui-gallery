@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Safety Supervision — GIS UI Gallery</title>
+
+<!--
+  ================================================================
+  SMART SAFETY SITE SUPERVISION — MapLibre template
+  ================================================================
+  Single file, no API key. CARTO basemap.
+
+  To go live: replace SEED blocks with your site CCTV / IoT / incident API.
+  Expected fields per alert: id, type, severity, zone, time, description.
+  Expected fields per zone: id, name, status, polygon [[lng,lat],...].
+
+  The Prompt that built this:
+  "Build a construction site safety console: hazard zone polygons on map
+   with severity colour coding, real-time alert feed (PPE missing, zone
+   breach, gas), CCTV-style camera list, incident count KPIs, and a
+   slide-in detail panel. MapLibre, single HTML file."
+-->
+
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;510;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#080a0d; --surface:#0d1117; --surface-2:#141b22; --line:rgba(148,196,255,.08);
+  --text:#e8f0f8; --text-2:#8fa3b8; --text-3:#4a5568;
+  --accent:#f87171; --accent-soft:rgba(248,113,113,.12);
+  --ok:#4ade80; --warn:#fbbf24; --info:#38bdf8;
+  --font-sans:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{background:var(--surface)!important;color:var(--text-3)!important;font-size:10px}
+.maplibregl-ctrl-attrib a{color:var(--text-3)!important}
+
+.hud{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
+.hud>*{pointer-events:auto}
+
+/* top */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px 0;gap:12px}
+.title{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 18px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.title h1{font-size:15px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.title .sub{font-family:var(--font-mono);font-size:9.5px;color:var(--text-3);letter-spacing:.07em;margin-top:3px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:blink 1.8s infinite}
+@keyframes blink{50%{opacity:.3}}
+
+/* KPI strip */
+.kpis{display:flex;gap:8px;position:absolute;top:96px;left:50%;transform:translateX(-50%)}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.kpi b{font-family:var(--font-mono);font-size:17px;font-weight:600;display:block}
+.kpi.c-alert b{color:var(--accent)} .kpi.c-ok b{color:var(--ok)} .kpi.c-warn b{color:var(--warn)}
+.kpi span{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.09em;color:var(--text-3);text-transform:uppercase}
+
+/* left: zones */
+.zones{position:absolute;left:20px;top:96px;width:230px;background:var(--surface);border:1px solid var(--line);
+  border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column;max-height:52vh}
+.zones header{padding:10px 14px;border-bottom:1px solid var(--line)}
+.zones header h2{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)}
+.zones ul{list-style:none;padding:6px;overflow-y:auto}
+.zone{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:120ms;font-size:12px}
+.zone:hover{background:rgba(148,196,255,.06)}
+.zone.sel{background:rgba(248,113,113,.08);outline:1px solid rgba(248,113,113,.3)}
+.zone .dot{width:9px;height:9px;border-radius:2px;flex:none}
+.zone .nm{flex:1}
+.zone .st{font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:99px;text-transform:uppercase}
+.zone .st.restricted{color:var(--accent);background:var(--accent-soft)}
+.zone .st.caution{color:var(--warn);background:rgba(251,191,36,.12)}
+.zone .st.safe{color:var(--ok);background:rgba(74,222,128,.12)}
+
+/* right: alerts */
+.alerts{position:absolute;right:20px;top:96px;width:290px;background:var(--surface);border:1px solid var(--line);
+  border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.35);display:flex;flex-direction:column;max-height:60vh}
+.alerts header{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.alerts header h2{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)}
+.alerts header span{font-family:var(--font-mono);font-size:10px;color:var(--accent)}
+.alerts ul{list-style:none;padding:6px;overflow-y:auto;min-height:0}
+.alert{display:flex;gap:10px;padding:9px 10px;border-radius:7px;cursor:pointer;transition:120ms;align-items:flex-start}
+.alert:hover{background:rgba(148,196,255,.06)}
+.alert.sel{background:var(--accent-soft);outline:1px solid rgba(248,113,113,.3)}
+.alert .sev{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;font-size:11px;flex:none;margin-top:1px}
+.sev.critical{background:rgba(248,113,113,.15);color:var(--accent)}
+.sev.high{background:rgba(251,191,36,.15);color:var(--warn)}
+.sev.medium{background:rgba(56,189,248,.15);color:var(--info)}
+.alert .body{flex:1;min-width:0}
+.alert .t{font-size:12px;font-weight:510;line-height:1.3}
+.alert .m{font-family:var(--font-mono);font-size:9.5px;color:var(--text-3);margin-top:2px}
+.alert .time{font-family:var(--font-mono);font-size:9px;color:var(--text-3);flex:none;margin-top:2px}
+
+/* detail drawer */
+.drawer{position:absolute;right:0;top:0;bottom:0;width:320px;background:var(--surface);border-left:1px solid var(--line);
+  padding:18px;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.75,.25,1);z-index:5;overflow-y:auto}
+.drawer.show{transform:none}
+.drawer h2{font-size:15px;margin-bottom:2px}
+.drawer .sub{font-family:var(--font-mono);font-size:10px;color:var(--text-3);margin-bottom:14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px}
+.kv dt{color:var(--text-3);font-family:var(--font-mono);font-size:10px;align-self:center}
+.kv dd{text-align:right;font-family:var(--font-mono);font-size:11.5px}
+.drawer .close{position:absolute;top:12px;right:14px;background:none;border:0;color:var(--text-3);cursor:pointer;font-size:17px}
+.drawer .close:hover{color:var(--text)}
+.drawer .photo{margin-top:14px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.drawer .photo img{width:100%;height:120px;object-fit:cover;display:block;background:var(--surface-2)}
+.drawer .photo .cap{font-family:var(--font-mono);font-size:9px;color:var(--text-3);padding:6px 10px}
+
+/* severity badge in popup */
+.sev-badge{display:inline-block;font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:99px;margin-top:4px}
+
+@media (max-width:760px){
+  .zones,.alerts{display:none}
+  .kpis{top:80px;flex-wrap:wrap;justify-content:center}
+  .drawer{width:100%;border-left:0;border-top:1px solid var(--line);top:auto;bottom:0;height:52%}
+}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="hud">
+  <div class="topbar">
+    <div class="title">
+      <h1><span class="live-dot"></span>Site Safety — Kai Tak Development</h1>
+      <div class="sub">REAL-TIME SUPERVISION · SIMULATED IoT</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi c-alert"><b id="k-alerts">0</b><span>alerts</span></div>
+      <div class="kpi c-warn"><b id="k-zones">0</b><span>zones</span></div>
+      <div class="kpi c-ok"><b id="k-ok">0</b><span>safe</span></div>
+    </div>
+  </div>
+
+  <div class="zones">
+    <header><h2>Hazard Zones</h2></header>
+    <ul id="zone-list"></ul>
+  </div>
+
+  <div class="alerts">
+    <header><h2>Live Alerts</h2><span id="alert-count"></span></header>
+    <ul id="alert-list"></ul>
+  </div>
+</div>
+
+<div class="drawer" id="drawer">
+  <button class="close" onclick="closeDrawer()" aria-label="Close">×</button>
+  <h2 id="d-title"></h2>
+  <div class="sub" id="d-meta"></div>
+  <dl class="kv">
+    <dt>TYPE</dt><dd id="d-type"></dd>
+    <dt>ZONE</dt><dd id="d-zone"></dd>
+    <dt>SEVERITY</dt><dd id="d-sev"></dd>
+    <dt>TIME</dt><dd id="d-time"></dd>
+    <dt>STATUS</dt><dd id="d-status"></dd>
+    <dt>DETAIL</dt><dd id="d-detail"></dd>
+  </dl>
+  <div class="photo" id="d-photo" style="display:none">
+    <div class="cap">CCTV FRAME · CH-04 · AI DETECTED</div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   ==== SWAP YOUR DATA HERE ====
+   ================================================================ */
+const ZONES = [
+  {id:'Z1', name:'Crane A — Tower 3',     status:'restricted', color:'#f87171', ring:[[114.203,22.320],[114.208,22.320],[114.208,22.316],[114.203,22.316]]},
+  {id:'Z2', name:'Excavation Pit B',      status:'restricted', color:'#f87171', ring:[[114.210,22.318],[114.215,22.318],[114.215,22.314],[114.210,22.314]]},
+  {id:'Z3', name:'Material Laydown Yard', status:'caution',    color:'#fbbf24', ring:[[114.205,22.315],[114.209,22.315],[114.209,22.312],[114.205,22.312]]},
+  {id:'Z4', name:'Temporary Office',      status:'safe',       color:'#4ade80', ring:[[114.212,22.313],[114.216,22.313],[114.216,22.310],[114.212,22.310]]},
+  {id:'Z5', name:'Perimeter North',       status:'caution',    color:'#fbbf24', ring:[[114.201,22.322],[114.208,22.322],[114.208,22.320],[114.201,22.320]]},
+];
+
+const ALERTS = [
+  {id:'ALT-001', type:'PPE Missing',      severity:'critical', zone:'Z2', time:'22:14:07', detail:'Worker without hardhat detected near excavation edge. Distance to pit edge: 1.2m.', status:'Open'},
+  {id:'ALT-002', type:'Zone Breach',      severity:'high',     zone:'Z1', time:'22:11:33', detail:'Unauthorised entry into crane swing radius. Worker ID not recognised.', status:'Open'},
+  {id:'ALT-003', type:'Gas Detection',    severity:'high',     zone:'Z2', time:'22:08:51', detail:'H₂S reading 12 ppm — above 10 ppm threshold. Ventilation fan auto-activated.', status:'Acknowledged'},
+  {id:'ALT-004', type:'Fall Risk',        severity:'medium',   zone:'Z1', time:'22:05:19', detail:'Worker at height without tether detected by AI vision.', status:'Open'},
+  {id:'ALT-005', type:'Equipment Fault',  severity:'medium',   zone:'Z3', time:'21:58:44', detail:'Tower crane A wind speed sensor offline. Last reading 28 km/h.', status:'Resolved'},
+  {id:'ALT-006', type:'Noise Limit',      severity:'medium',   zone:'Z5', time:'21:52:07', detail:'Perimeter noise 78 dB — exceeds 75 dB night limit. Resident complaint possible.', status:'Open'},
+  {id:'ALT-007', type:'Dust Threshold',   severity:'medium',   zone:'Z3', time:'21:47:30', detail:'PM2.5 185 µg/m³ at material yard. Water spray activated.', status:'Acknowledged'},
+  {id:'ALT-008', type:'Perimeter Intrusion', severity:'critical', zone:'Z5', time:'21:41:12', detail:'Motion detected outside hoarding at Gate 3. Security dispatched.', status:'Open'},
+];
+/* ==================== end of data block ======================== */
+
+const HK = [114.208, 22.316];
+const SEV_COLOR = {critical:'#f87171', high:'#fbbf24', medium:'#38bdf8'};
+
+const map = new maplibregl.Map({
+  container:'map',
+  style:'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  center:HK, zoom:15.8, pitch:50, bearing:-10, attributionControl:{compact:true},
+});
+map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'bottom-right');
+
+let selZone = null, selAlert = null;
+
+map.on('load', () => {
+  map.addSource('zones', { type:'geojson', data:{
+    type:'FeatureCollection',
+    features: ZONES.map(z => ({
+      type:'Feature',
+      properties:{ id:z.id, name:z.name, status:z.status, color:z.color },
+      geometry:{ type:'Polygon', coordinates:[[...z.ring, z.ring[0]]] },
+    })),
+  }});
+  map.addLayer({ id:'z-fill', type:'fill', source:'zones',
+    paint:{ 'fill-color':['get','color'], 'fill-opacity':.14 } });
+  map.addLayer({ id:'z-line', type:'line', source:'zones',
+    paint:{ 'line-color':['get','color'], 'line-width':1.8, 'line-opacity':.9 } });
+  map.addLayer({ id:'z-label', type:'symbol', source:'zones',
+    layout:{ 'text-field':['get','name'], 'text-size':11, 'text-font':['Noto Sans Regular'], 'text-anchor':'center' },
+    paint:{ 'text-color':'#e8f0f8', 'text-halo-color':'rgba(8,10,13,.8)', 'text-halo-width':1.5 } });
+
+  map.on('click','z-fill', e => {
+    const p = e.features[0].properties;
+    selectZone(p.id);
+    openAlertForZone(p.id);
+  });
+  map.on('mouseenter','z-fill', () => map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','z-fill', () => map.getCanvas().style.cursor='');
+
+  renderZones(); renderAlerts(); renderKpis();
+});
+
+/* ---------- zones ---------- */
+function renderZones(){
+  const ul = document.getElementById('zone-list');
+  ul.innerHTML = '';
+  ZONES.forEach(z => {
+    const li = document.createElement('li');
+    li.className = 'zone'; li.dataset.id = z.id;
+    li.innerHTML = `<span class="dot" style="background:${z.color}"></span>
+      <span class="nm">${z.name}</span>
+      <span class="st ${z.status}">${z.status}</span>`;
+    li.onclick = () => { selectZone(z.id); map.easeTo({center:centroid(z.ring), zoom:17, duration:600}); };
+    ul.appendChild(li);
+  });
+}
+
+function selectZone(id){
+  selZone = id;
+  document.querySelectorAll('.zone').forEach(el => el.classList.toggle('sel', el.dataset.id===id));
+}
+
+function centroid(ring){
+  const s = ring.reduce((a,p)=>[a[0]+p[0],a[1]+p[1]],[0,0]);
+  return [s[0]/ring.length, s[1]/ring.length];
+}
+
+/* ---------- alerts ---------- */
+function renderAlerts(){
+  const ul = document.getElementById('alert-list');
+  ul.innerHTML = '';
+  ALERTS.forEach(a => {
+    const li = document.createElement('li');
+    li.className = 'alert'; li.dataset.id = a.id;
+    li.innerHTML = `
+      <span class="sev ${a.severity}">${a.severity[0].toUpperCase()}</span>
+      <span class="body"><span class="t">${a.type}</span><br><span class="m">${ZONES.find(z=>z.id===a.zone).name} · ${a.status}</span></span>
+      <span class="time">${a.time}</span>`;
+    li.onclick = () => openAlert(a.id);
+    ul.appendChild(li);
+  });
+  document.getElementById('alert-count').textContent = ALERTS.filter(a=>a.status==='Open').length + ' open';
+}
+
+function openAlert(id){
+  selAlert = id;
+  const a = ALERTS.find(x=>x.id===id);
+  document.getElementById('d-title').textContent = a.type;
+  document.getElementById('d-meta').textContent = a.id + ' · ' + a.time;
+  document.getElementById('d-type').textContent = a.type;
+  document.getElementById('d-zone').textContent = ZONES.find(z=>z.id===a.zone).name;
+  document.getElementById('d-sev').textContent = a.severity.toUpperCase();
+  document.getElementById('d-time').textContent = a.time;
+  document.getElementById('d-status').textContent = a.status;
+  document.getElementById('d-detail').textContent = a.detail;
+  document.getElementById('d-photo').style.display = a.severity==='critical' ? '' : 'none';
+  document.getElementById('drawer').classList.add('show');
+  document.querySelectorAll('.alert').forEach(el => el.classList.toggle('sel', el.dataset.id===id));
+  const z = ZONES.find(z=>z.id===a.zone);
+  map.easeTo({center:centroid(z.ring), zoom:17, duration:700});
+}
+
+function openAlertForZone(zid){
+  const a = ALERTS.find(x=>x.zone===zid && x.status==='Open') || ALERTS.find(x=>x.zone===zid);
+  if (a) openAlert(a.id);
+}
+
+function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); selAlert=null;
+  document.querySelectorAll('.alert').forEach(el=>el.classList.remove('sel')); }
+
+function renderKpis(){
+  document.getElementById('k-alerts').textContent = ALERTS.filter(a=>a.status==='Open').length;
+  document.getElementById('k-zones').textContent = ZONES.length;
+  document.getElementById('k-ok').textContent = ZONES.filter(z=>z.status==='safe').length;
+}
+
+/* ---------- simulate live alerts (rotate one every 8s) ---------- */
+let simIdx = 0;
+setInterval(() => {
+  const a = ALERTS[simIdx % ALERTS.length];
+  // toggle status to simulate new activity
+  a.status = a.status === 'Open' ? 'Acknowledged' : 'Open';
+  a.time = new Date().toLocaleTimeString('en-HK',{hour12:false,timeZone:'Asia/Hong_Kong'});
+  renderAlerts(); renderKpis();
+  simIdx++;
+}, 8000);
+</script>
+</body>
+</html>
