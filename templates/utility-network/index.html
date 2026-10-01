@@ -79,33 +79,31 @@
 </div>
 
 <script type="module">
-require([
-  "esri/WebMap",
-  "esri/views/MapView",
-  "esri/widgets/UtilityNetworkTrace",
-  "esri/config"
-], function(WebMap, MapView, UtilityNetworkTrace, esriConfig){
+const [WebMap, MapView, UtilityNetworkTrace, config] = await $arcgis.import([
+  "@arcgis/core/WebMap.js",
+  "@arcgis/core/views/MapView.js",
+  "@arcgis/core/widgets/UtilityNetworkTrace.js",
+  "@arcgis/core/config.js"
+]);
 
-  esriConfig.portalUrl = "https://www.arcgis.com";
+config.portalUrl = "https://www.arcgis.com";
 
-  const webmap = new WebMap({
-    portalItem: { id: "471eb0bf37074b1fbb972b1da70fb310" }
-  });
+const webmap = new WebMap({
+  portalItem: { id: "471eb0bf37074b1fbb972b1da70fb310" }
+});
 
-  const view = new MapView({
-    container: "viewDiv",
-    map: webmap
-  });
+const view = new MapView({
+  container: "viewDiv",
+  map: webmap
+});
 
-  view.when(() => {
-    document.getElementById("loading").classList.add("done");
-
-    const trace = new UtilityNetworkTrace({ view: view });
-    view.ui.add(trace, "top-right");
-  }).catch(err => {
-    console.error(err);
-    document.getElementById("loading").classList.add("done");
-  });
+view.when(() => {
+  document.getElementById("loading").classList.add("done");
+  const trace = new UtilityNetworkTrace({ view: view });
+  view.ui.add(trace, "top-right");
+}).catch(err => {
+  console.error(err);
+  document.getElementById("loading").classList.add("done");
 });
 </script>
 </body>
