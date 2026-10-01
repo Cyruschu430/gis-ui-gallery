@@ -78,7 +78,10 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);overflow:
 .fleet header{padding:11px 14px;border-bottom:1px solid var(--glass-border);display:flex;justify-content:space-between;align-items:baseline}
 .fleet header h2{font-size:10.5px;font-weight:600;letter-spacing:var(--panel-title-ls);text-transform:var(--panel-title-transform);color:var(--text-2)}
 .fleet header span{font-family:var(--font-mono);font-size:10px;color:var(--accent)}
-.fleet ul{list-style:none;padding:6px;overflow-y:auto}
+.fleet ul{list-style:none;padding:6px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--glass-border) transparent}
+.fleet ul::-webkit-scrollbar{width:6px}
+.fleet ul::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:3px}
+.fleet ul::-webkit-scrollbar-track{background:transparent}
 .fleet li{padding:8px 10px;border-radius:calc(var(--radius) - 4px);cursor:pointer;display:flex;align-items:center;gap:10px;transition:120ms}
 .fleet li:hover{background:var(--accent-soft)}
 .fleet li.sel{background:var(--accent-soft);outline:1px solid var(--accent)}
