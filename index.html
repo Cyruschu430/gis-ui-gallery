@@ -72,6 +72,7 @@
   a.card:hover .open{color:var(--accent-hi)}
   .card.disabled{opacity:.55}
   .card.disabled:hover{transform:none;border-color:var(--border)}
+  .grid-sep{grid-column:1/-1;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);margin:34px 0 4px;padding-top:22px;border-top:1px solid var(--border)}
 
   footer{border-top:1px solid var(--border);padding:32px 0 48px;color:var(--text-3);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
   footer code{font-family:var(--mono);font-size:12px}
@@ -111,6 +112,8 @@
     <button class="fbtn" data-f="datamgmt">data management</button>
     <button class="fbtn" data-f="field">field &amp; work order</button>
     <button class="fbtn" data-f="3d">2D / 3D</button>
+    <button class="fbtn" data-f="analysis">analysis</button>
+    <button class="fbtn" data-f="component">components</button>
   </div>
 
   <div class="grid" id="cards">
@@ -388,12 +391,288 @@
       </div>
     </a>
 
+    <!-- ==================== COMING SOON — SOLUTIONS ==================== -->
+    <div class="grid-sep">Solutions — full-page apps</div>
+
+    <div class="card disabled" data-cat="analysis">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Site Analysis <span class="cat">analysis</span></h3>
+        <p>Type an address or click the map → instant buffer rings (500m / 1km), what's-inside summary (POI, schools, transport), walkability score. The "planner's first screen".</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#4ade80"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="analysis">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>CSV → Map <span class="cat">analysis</span></h3>
+        <p>Drag &amp; drop any CSV with addresses/lat-lng → auto-geocoded points on map with popup fields. Zero code. For the "I just need to see my data" crowd.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#38bdf8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="analysis">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Choropleth Explorer <span class="cat">analysis</span></h3>
+        <p>HK district choropleth with swap-able metric (population, median income, age index), auto-classified legend, click-to-compare districts. Census-ready.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#f4f0e6"></i><i style="background:#8c2f2f"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="analysis">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Property Scorecard <span class="cat">analysis</span></h3>
+        <p>Multi-criteria location score (transit, schools, noise, greenery) — user drags sliders, scores update live. HomeCheck-style decision tool pattern.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#fbbf24"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="realtime">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Air Quality / Noise Monitor <span class="cat">realtime</span></h3>
+        <p>Live EPD air quality + noise stations on map with trend sparklines. Public data, but nobody's made a nice UI for it.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#a3e635"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="realtime">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Flood / Rainfall Nowcast <span class="cat">realtime</span></h3>
+        <p>HKO rainfall radar + flood-prone area overlay with animated storm cells. Visual drama + real utility.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a1420"></i><i style="background:#38bdf8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="infoboard">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Before / After Compare <span class="cat">infoboard</span></h3>
+        <p>Swipe slider between two time periods — old airport vs new development, pre/post project imagery. Classic storytelling pattern.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#f7f8f8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="infoboard">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Story Map / Scrolly-telling <span class="cat">infoboard</span></h3>
+        <p>Scroll-driven narrative: text chapters fly the camera through the map. For proposals, public consultation, pitch decks.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#f4f0e6"></i><i style="background:#0a0e13"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="datamgmt">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Asset Manager <span class="cat">datamgmt</span></h3>
+        <p>Generic asset register: lamp posts, signs, manholes — table + map + filter by condition. The "boring but everyone needs it" app.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#5e6ad2"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="datamgmt">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Crowd / People Flow <span class="cat">realtime</span></h3>
+        <p>Heatmap + time slider for footfall — events, malls, transport hubs. Plug in people-counting data.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#f87171"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="3d">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Underground Utilities 3D <span class="cat">3d</span></h3>
+        <p>Buried pipes / tunnels rendered in 3D scene with x-ray ground slice. Hard to do right, big wow factor.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#fbbf24"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="3d">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Construction 4D Timeline <span class="cat">3d</span></h3>
+        <p>3D building model + timeline slider: watch the project grow floor by floor. BIM-lite for proposals.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#38bdf8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="3d">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Point Cloud Viewer <span class="cat">3d</span></h3>
+        <p>LiDAR / photogrammetry point clouds (COPC / LAZ) streamed in browser. Government releases data but nobody visualises it well.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#a3e635"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="infoboard">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Print-ready Map Export <span class="cat">infoboard</span></h3>
+        <p>Compose A4/A3 layout with title, legend, scale bar, north arrow → export PDF. Consultants live on this.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#f7f8f8"></i><i style="background:#0a0e13"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
     <div class="card disabled" data-cat="field">
       <div class="thumb"><span class="soon">COMING SOON</span></div>
       <div class="cbody">
-        <h3>Field Work Orders (MapLibre) <span class="cat">field</span></h3>
-        <p>Open-source variant of the same UI — no API key, MapLibre + vanilla JS list.</p>
-        <div class="cmeta"><span class="skins"><i style="background:#0a1420"></i><i style="background:#f4f2ec"></i></span><span class="open">soon</span></div>
+        <h3>Field Inspection Form <span class="cat">field</span></h3>
+        <p>Mobile-first: photo capture + GPS + dropdowns → submits a point. The "go out and survey" starter.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#4ade80"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="realtime">
+      <div class="thumb"><span class="soon">COMING SOON</span></div>
+      <div class="cbody">
+        <h3>Emergency Dispatch <span class="cat">realtime</span></h3>
+        <p>Incident map + unit assignment + status board. Multi-agency command view for drills and live ops.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#080a0d"></i><i style="background:#f87171"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <!-- ==================== COMING SOON — COMPONENTS ==================== -->
+    <div class="grid-sep">Components — copy one block into your own map</div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Basemap Switcher <span class="cat">component</span></h3>
+        <p>Thumbstrip of basemaps (dark / light / satellite / topo / ink) in one corner pill. Copy 40 lines, works on any MapLibre map.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#f7f8f8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Legend + Layer Toggle <span class="cat">component</span></h3>
+        <p>Auto-generated from your layer config — swatch + label + visibility checkbox. No more hand-coding legends.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#38bdf8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Time Slider <span class="cat">component</span></h3>
+        <p>Playback bar for temporal GeoJSON — play/pause/step, speed control. Traffic, typhoon tracks, construction phases.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#fbbf24"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Measure Tools <span class="cat">component</span></h3>
+        <p>Distance + area measurement with live readout, click-click-finish. Every map eventually needs this.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#4ade80"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Draw / Redline <span class="cat">component</span></h3>
+        <p>Freehand draw + annotate on map, export as GeoJSON. For "mark up the problem area" workflows.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#f87171"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Swipe Compare <span class="cat">component</span></h3>
+        <p>Two-layer swipe control (before/after, plan/existing). Drop-in vanilla JS, works with any two layers.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#f7f8f8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Coordinate / Address Search <span class="cat">component</span></h3>
+        <p>One input that handles address, lat-lng, plus code, what3words. Flies the map, drops a pin. Nominatim by default, swap for your geocoder.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#38bdf8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>KPI Counter Strip <span class="cat">component</span></h3>
+        <p>Live-counting stat cards bound to your data — pulses on update. The "top of every dashboard" pattern.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#4ade80"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Filter Panel <span class="cat">component</span></h3>
+        <p>Auto-built checkbox + range slider filters from your feature properties. Drives a map filter in 3 lines.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#a3e635"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Popup Card <span class="cat">component</span></h3>
+        <p>Opinionated feature popup: photo, title, 3 key stats, action button. Replaces default popup with something people actually like.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#5e6ad2"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Compass + Scale Bar <span class="cat">component</span></h3>
+        <p>Stylised compass rose + scale bar with HK grid reference readout. The "professional map" finishing touch.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#f7f8f8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Geofence Alert <span class="cat">component</span></h3>
+        <p>Drop a polygon, watch for points entering/leaving, fire a toast. Fleet / safety use cases.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#fbbf24"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Route / Isochrone <span class="cat">component</span></h3>
+        <p>Click two points → route line + ETA. Or one point → 5/10/15min isochrone. OSRM backend, swap for your router.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#38bdf8"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Bookmark / Saved Views <span class="cat">component</span></h3>
+        <p>Save current camera position + visible layers as named views. Users return to their spots.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#a3e635"></i></span><span class="open">soon</span></div>
+      </div>
+    </div>
+
+    <div class="card disabled" data-cat="component">
+      <div class="thumb"><span class="soon">WIDGET</span></div>
+      <div class="cbody">
+        <h3>Share / Embed Button <span class="cat">component</span></h3>
+        <p>Generates a URL with current map state (center, zoom, layers, filters) → anyone opens the same view. Criminally underused.</p>
+        <div class="cmeta"><span class="skins"><i style="background:#0a0e13"></i><i style="background:#f7f8f8"></i></span><span class="open">soon</span></div>
       </div>
     </div>
 
@@ -415,6 +694,10 @@
     const f = btn.dataset.f;
     document.querySelectorAll('.card').forEach(c => {
       c.style.display = (f === 'all' || c.dataset.cat === f) ? '' : 'none';
+    });
+    // hide separators when filtering (they're only meaningful in "all" view)
+    document.querySelectorAll('.grid-sep').forEach(s => {
+      s.style.display = (f === 'all') ? '' : 'none';
     });
   });
 </script>
