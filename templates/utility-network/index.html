@@ -89,12 +89,14 @@ const [WebMap, MapView, UtilityNetworkTrace, config] = await $arcgis.import([
 config.portalUrl = "https://www.arcgis.com";
 
 const webmap = new WebMap({
-  portalItem: { id: "e53b1054b29f4579baf878dcf2effe7a" }  // Naperville Electric UN Associations — public
+  portalItem: { id: "471eb0bf37074b1fbb972b1da70fb310" }  // Naperville Electric UN — trace configs
 });
 
 const view = new MapView({
   container: "viewDiv",
-  map: webmap
+  map: webmap,
+  popup: { autoOpenEnabled: false },  // suppress sign-in popup; widget handles it
+  ui: { components: [] }               // no default widgets
 });
 
 view.when(() => {
