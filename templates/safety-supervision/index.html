@@ -290,10 +290,9 @@ function openAlert(id){
 }
 
 function openAlertForZone(zid){
-  // pick the most recent alert for this zone (any status), or the first
-  const zoneAlerts = ALERTS.filter(x=>x.zone===zid);
-  if (!zoneAlerts.length) return;
-  openAlert(zoneAlerts[0].id);
+  // pick the first alert for this zone (any status) — zones without alerts do nothing
+  const a = ALERTS.find(x=>x.zone===zid);
+  if (a) openAlert(a.id);
 }
 
 function closeDrawer(){ document.getElementById('drawer').classList.remove('show'); selAlert=null;
